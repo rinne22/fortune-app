@@ -77,7 +77,7 @@ def apply_custom_css(bg_image_url):
         /* 全体の余白調整 */
         .block-container {{ 
             padding-top: 2rem !important; 
-            padding-bottom: 150px !important; /* 入力欄のために下を空ける */
+            padding-bottom: 120px !important; 
         }}
 
         /* 背景画像の設定 */
@@ -89,7 +89,6 @@ def apply_custom_css(bg_image_url):
             background-attachment: fixed !important;
             background-position: center center !important;
         }}
-        /* 背景を少し暗くするオーバーレイ */
         .stApp::before {{
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
@@ -114,21 +113,32 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- チャット入力欄の劇的改善 --- */
-        /* 下部の固定エリアを透明にする */
+        /* --- チャット入力欄の劇的改善 (ここを重点修正) --- */
+        
+        /* 下部の固定エリアの背景を透明に強制する */
         [data-testid="stBottom"] {{
             background-color: transparent !important;
-            background-image: linear-gradient(to top, #000000, rgba(0,0,0,0)); /* 下から黒くフェード */
-            padding-bottom: 20px;
+            border: none !important;
+        }}
+        [data-testid="stBottom"] > div {{
+            background-color: transparent !important;
         }}
         
         /* 入力ボックス自体のデザイン */
         .stChatInput textarea {{
-            background-color: rgba(20, 20, 35, 0.9) !important; /* 暗い紫紺色 */
-            color: #FFD700 !important; /* 金色の文字 */
-            border: 1px solid rgba(255, 215, 0, 0.5) !important; /* 金色の枠線 */
+            background-color: rgba(0, 0, 0, 0.8) !important; /* 真っ黒に近い背景 */
+            color: #FFFFFF !important; /* 入力文字は白 */
+            border: 2px solid #FFD700 !important; /* 金色の枠線 */
             border-radius: 20px !important;
+            font-weight: bold !important;
         }}
+        
+        /* プレースホルダー（「回答を入力...」）の色を明るくする */
+        .stChatInput textarea::placeholder {{
+            color: #CCCCCC !important; /* 明るいグレーにして見やすく */
+            opacity: 1 !important;
+        }}
+        
         /* 送信ボタンの色 */
         [data-testid="stChatInputSubmitButton"] {{
             color: #FFD700 !important;
@@ -136,18 +146,16 @@ def apply_custom_css(bg_image_url):
 
         /* --- チャット吹き出しのデザイン --- */
         .stChatMessage {{
-            background-color: rgba(10, 10, 20, 0.85) !important; /* 半透明の黒 */
+            background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
             padding: 10px !important;
             margin-bottom: 10px !important;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }}
-        /* ユーザーのアイコン背景 */
         [data-testid="stChatMessageAvatarUser"] {{
             background-color: #333 !important;
         }}
-        /* AIのアイコン背景 */
         [data-testid="stChatMessageAvatarAssistant"] {{
             background-color: #220044 !important;
         }}
@@ -169,7 +177,6 @@ def apply_custom_css(bg_image_url):
             transform: scale(1.02) !important;
             box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
         }}
-        /* ダウンロードボタンの文字色強制 */
         div[data-testid="stDownloadButton"] button * {{
             color: #000000 !important;
         }}
@@ -385,8 +392,8 @@ def main():
                 with st.chat_message(msg["role"], avatar=role_icon):
                     st.write(msg["content"])
         
-        # 入力欄を下に固定
-        prompt = st.chat_input("回答を入力...")
+        # 入力欄を下に固定（プレースホルダーを見やすく修正済み）
+        prompt = st.chat_input("ここに回答を入力してください...")
         if prompt:
             st.session_state.chat_history.append({"role": "user", "content": prompt})
             
