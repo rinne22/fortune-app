@@ -17,8 +17,8 @@ MODEL_NAME = "gemini-2.5-flash"
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="AI適職占いの館",
-    page_icon="🔮",
+    page_title="AI適職占いの館 For Students",
+    page_icon="🎓",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -28,18 +28,18 @@ URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80
 URL_FRAME_GOLD = 'https://www.transparenttextures.com/patterns/always-grey.png'
 URL_AGED_PAPER = 'https://www.transparenttextures.com/patterns/aged-paper.png'
 
-# 質問データ
+# 質問データ (学生向けにアレンジ)
 QUESTIONS = [
-    {"id": "q1", "q": "I. 魂の渇望 - 仕事で最も得たい報酬は？", "options": {"💰 圧倒的な成果と地位（昇進・独立）": "fire", "🧠 新しい知識と専門性（スキルアップ）": "water", "🤝 仲間との信頼と感謝（チームワーク）": "wind"}},
-    {"id": "q2", "q": "II. 魔力の源泉 - チーム内での役割は？", "options": {"🔥 皆を引っ張るリーダー（方針決定）": "fire", "💧 冷静な参謀・分析役（課題発見）": "water", "🌿 相談役・ムードメーカー（環境調整）": "wind"}},
-    {"id": "q3", "q": "III. 冒険の指針 - 新規プロジェクト、どう進める？", "options": {"⚔️ 「まずはやってみよう」と行動開始": "fire", "🗺️ 「成功確率は？」とデータを収集": "water", "🛡️ 「みんなの意見は？」と合意形成": "wind"}},
-    {"id": "q4", "q": "IV. 求める秘宝 - 理想の職場環境は？", "options": {"👑 実力主義で競争がある環境": "fire", "📜 静かで作業に没頭できる環境": "water", "🕊️ アットホームで協力的な環境": "wind"}},
-    {"id": "q5", "q": "V. 試練の刻 - トラブル発生！どう動く？", "options": {"⚡️ 自分が先頭に立って解決に走る": "fire", "🔍 原因を根本から論理的に突き止める": "water", "📣 関係各所に連絡し、被害を最小限にする": "wind"}},
-    {"id": "q6", "q": "VI. 交信の作法 - プレゼンで重視することは？", "options": {"🔥 熱意とビジョンを伝えること": "fire", "💧 正確なデータと根拠を示すこと": "water", "🌿 相手の感情やニーズに寄り添うこと": "wind"}},
-    {"id": "q7", "q": "VII. 失敗の代償 - ミスをした時、どう思う？", "options": {"🔥 「次は絶対成功させる」と燃える": "fire", "💧 「なぜ起きたか」プロセスを見直す": "water", "🌿 「周りに迷惑をかけた」と反省する": "wind"}},
-    {"id": "q8", "q": "VIII. 究極スキル - 今一番欲しい能力は？", "options": {"🔥 人を動かす影響力・交渉力": "fire", "💧 物事の本質を見抜く分析力": "water", "🌿 誰とでも仲良くなれる対人力": "wind"}},
-    {"id": "q9", "q": "IX. 安息の地 - 休暇の過ごし方は？", "options": {"🔥 アクティブに新しい体験をする": "fire", "💧 読書や学習で知見を広める": "water", "🌿 友人や家族とゆっくり過ごす": "wind"}},
-    {"id": "q10", "q": "X. 伝説の終わり - 引退時、どう言われたい？", "options": {"🔥 「彼/彼女が業界を変えた」": "fire", "💧 「彼/彼女の仕事は完璧だった」": "water", "🌿 「彼/彼女がいてくれて良かった」": "wind"}},
+    {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
+    {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
+    {"id": "q3", "q": "III. 冒険の指針 - 全く新しい課題が出たらどうする？", "options": {"⚔️ 「とりあえずやってみよう」と手を動かす": "fire", "🗺️ 「まずは情報を集めよう」と教科書を開く": "water", "🛡️ 「みんなはどう思う？」と友達と相談する": "wind"}},
+    {"id": "q4", "q": "IV. 求める秘宝 - 居心地が良いと感じる環境は？", "options": {"👑 実力主義で、成果を出せば評価される場所": "fire", "📜 静かで、自分の研究や作業に没頭できる場所": "water", "🕊️ アットホームで、先輩後輩が仲良い場所": "wind"}},
+    {"id": "q5", "q": "V. 試練の刻 - バイトや部活でトラブル発生！どう動く？", "options": {"⚡️ 自分が先頭に立って、その場で解決する": "fire", "🔍 なぜ起きたか原因を分析し、再発を防ぐ": "water", "📣 周りの人に状況を伝え、協力を仰ぐ": "wind"}},
+    {"id": "q6", "q": "VI. 交信の作法 - プレゼンや発表で意識することは？", "options": {"🔥 「情熱」や「想い」を熱く伝える": "fire", "💧 「データ」や「論理」を正確に伝える": "water", "🌿 「聞き手」が楽しんでいるかを気にする": "wind"}},
+    {"id": "q7", "q": "VII. 失敗の代償 - テストや試合で負けた時、どう思う？", "options": {"🔥 「次は絶対勝つ！」と闘志を燃やす": "fire", "💧 「敗因は何か？」と冷静に分析する": "water", "🌿 「チームに申し訳ない」と責任を感じる": "wind"}},
+    {"id": "q8", "q": "VIII. 究極スキル - 今、大学生活で身につけたい力は？", "options": {"🔥 人を巻き込み、何かを成し遂げる「行動力」": "fire", "💧 物事の本質を見抜き、解決する「思考力」": "water", "🌿 誰とでも信頼関係を築ける「対人力」": "wind"}},
+    {"id": "q9", "q": "IX. 安息の地 - 休日の理想的な過ごし方は？", "options": {"🔥 イベントや旅行など、アクティブに動く": "fire", "💧 読書、映画、ゲームなど、知識を深める": "water", "🌿 友達や恋人とカフェでのんびり話す": "wind"}},
+    {"id": "q10", "q": "X. 伝説の終わり - 卒業時、周りからどう言われたい？", "options": {"🔥 「あいつは凄かった、伝説だ」": "fire", "💧 「あいつがいれば何でも解決した」": "water", "🌿 「あいつがいてくれて本当に楽しかった」": "wind"}},
 ]
 
 # --- ヘルパー関数群 ---
@@ -71,16 +71,13 @@ def apply_custom_css(bg_image_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 不要な要素を隠す */
         #MainMenu, footer, header, [data-testid="stToolbar"], .stDeployButton {{ visibility: hidden; display: none; }}
         
-        /* 全体の余白調整 */
         .block-container {{ 
             padding-top: 2rem !important; 
-            padding-bottom: 120px !important; 
+            padding-bottom: 150px !important; 
         }}
 
-        /* 背景画像の設定 */
         .stApp {{
             background-color: #050510; 
             background-image: {bg_image_url} !important;
@@ -94,7 +91,6 @@ def apply_custom_css(bg_image_url):
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
         
-        /* --- テキストの装飾 --- */
         h1, h2, h3, h4, p, div, span, label, li {{
             color: #E0E0E0 !important;
             font-family: 'Shippori Mincho B1', serif;
@@ -113,9 +109,7 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- チャット入力欄の劇的改善 (ここを重点修正) --- */
-        
-        /* 下部の固定エリアの背景を透明に強制する */
+        /* --- チャット入力欄デザイン --- */
         [data-testid="stBottom"] {{
             background-color: transparent !important;
             border: none !important;
@@ -124,27 +118,21 @@ def apply_custom_css(bg_image_url):
             background-color: transparent !important;
         }}
         
-        /* 入力ボックス自体のデザイン */
         .stChatInput textarea {{
-            background-color: rgba(0, 0, 0, 0.8) !important; /* 真っ黒に近い背景 */
-            color: #FFFFFF !important; /* 入力文字は白 */
-            border: 2px solid #FFD700 !important; /* 金色の枠線 */
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            color: #FFFFFF !important;
+            border: 2px solid #FFD700 !important;
             border-radius: 20px !important;
             font-weight: bold !important;
         }}
-        
-        /* プレースホルダー（「回答を入力...」）の色を明るくする */
         .stChatInput textarea::placeholder {{
-            color: #CCCCCC !important; /* 明るいグレーにして見やすく */
+            color: #CCCCCC !important;
             opacity: 1 !important;
         }}
-        
-        /* 送信ボタンの色 */
         [data-testid="stChatInputSubmitButton"] {{
             color: #FFD700 !important;
         }}
 
-        /* --- チャット吹き出しのデザイン --- */
         .stChatMessage {{
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
@@ -160,7 +148,6 @@ def apply_custom_css(bg_image_url):
             background-color: #220044 !important;
         }}
 
-        /* --- ボタン共通デザイン --- */
         .stButton button, div[data-testid="stDownloadButton"] button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #DAA520) !important;
@@ -181,7 +168,6 @@ def apply_custom_css(bg_image_url):
             color: #000000 !important;
         }}
 
-        /* --- ラジオボタンの選択肢 --- */
         div[role="radiogroup"] label {{
             background: rgba(30, 30, 50, 0.8) !important;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -192,7 +178,6 @@ def apply_custom_css(bg_image_url):
             border-color: #FFD700; background: rgba(50, 40, 80, 0.9) !important;
         }}
 
-        /* --- 診断結果カード --- */
         .tarot-card-outer {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -236,7 +221,7 @@ def create_pdf(user_type, title, skills, jobs, advice):
     c.drawString(50, 680, "【獲得したスキル】")
     skills_text = " / ".join(skills) if isinstance(skills, list) else str(skills)
     c.drawString(70, 660, skills_text)
-    c.drawString(50, 620, "【運命の適職】")
+    c.drawString(50, 620, "【おすすめインターン・適職】")
     jobs_text = " / ".join(jobs) if isinstance(jobs, list) else str(jobs)
     c.drawString(70, 600, jobs_text)
     c.drawString(50, 550, "【賢者からの助言】")
@@ -320,7 +305,7 @@ def main():
         st.markdown("""
         <div style="text-align: center;">
             <h1 class="main-title">FORTUNE CAREER</h1>
-            <p style='letter-spacing: 0.5em; color: #FFD700; font-size: 1.2em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>AI 適職占いの館</p>
+            <p style='letter-spacing: 0.5em; color: #FFD700; font-size: 1.2em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>AI 適職占いの館<br>For Students</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -328,9 +313,9 @@ def main():
         with col2:
             st.markdown("""
             <div class="intro-text">
-                ようこそ、迷える魂よ。<br>
-                ここは星々の導きと、ビジネスの叡智が交わる場所。<br>
-                あなたの真の才能と、現代における天職を紐解いて進ぜよう。
+                ようこそ、迷える若き魂よ。<br>
+                ここは星々の導きと、就活の叡智が交わる場所。<br>
+                あなたの真の才能と、未来のキャリアを紐解いて進ぜよう。
             </div>
             """, unsafe_allow_html=True)
             if st.button("🚪 運命の扉を開く"):
@@ -345,7 +330,7 @@ def main():
             st.markdown("""
             <div style="text-align: center; margin-bottom: 30px;">
                 <p style="margin-top: 20px; font-style: italic; font-size: 1.5em; color: #FFD700; font-weight: 900; text-shadow: 2px 2px 0px #000;">
-                    「そなたの仕事観について、10の問いに答えよ…」
+                    「そなたの価値観について、10の問いに答えよ…」
                 </p>
             </div>
             """, unsafe_allow_html=True)
@@ -360,25 +345,29 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット
+    # STEP 2: チャット (学生向けキャリア面談モード)
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
+            # ▼▼▼ 学生向けにカスタマイズされたシステムプロンプト ▼▼▼
             system_prompt = f"""
-            あなたは「運命の館」の占い師であり、優秀なキャリアコンサルタントです。
-            ユーザーの属性は「{main_attr}」({res_type})です。
-            口調は「神秘的な占い師（〜じゃ、そなたは〜）」ですが、中身は「具体的で深いキャリアヒアリング」を行ってください。
+            あなたは「運命の館」の占い師ですが、正体は**「学生専門のキャリアコンサルタント」**です。
+            ユーザーの属性「{main_attr}」({res_type})に基づき、就職活動や将来のキャリアに向けた具体的なアドバイスを行うため、深掘りをしてください。
             
-            【重要：対話のルール】
-            ・**一方的に質問を投げつけないでください。**
-            ・ユーザーが回答したら、まずその内容に対して共感・リアクションを示してください。
+            【役割】
+            ・口調は「〜じゃ」「そなた」等の神秘的な占い師ですが、**内容は超現実的な就活面談**です。
+            
+            【ヒアリングのポイント】
+            ・**ガクチカ（学生時代に力を入れたこと）**: 部活、サークル、アルバイト、ゼミ、研究など。
+            ・**具体的なエピソード**: 「リーダーシップがある」と言うなら、「何人のチームで、どんな課題を解決したか？」を聞く。
+            ・**スキル**: プログラミング、語学、デザイン、対人折衝など、実務で使えるスキルがあるか探る。
             
             【進行手順】
-            1. **【重要】冒頭の提案**: まず、診断された属性「{main_attr}」から読み取れる**「ユーザーの才能や適職の仮説（提案）」**を提示してください。
-            2. その提案に対し、ユーザーがどう思うか、実際の経験と照らし合わせてどう感じるかを問いかけてください。
-            3. その後、ユーザーの反応に合わせて深掘りし、合計**4往復**ほど会話を続けてください。
-            4. 十分な情報が集まったら、「では、運命の書に記された結果を見るがよい...」と締めくくってください。
+            1. **冒頭**: 「そなたの魂の色は『{main_attr}』じゃ。これは〜な才能を示しておる。学業や課外活動で、そのような才を発揮した場面はないか？」と水を向ける。
+            2. **深掘り**: ユーザーの回答に対し、「なるほど。ではその時、具体的にどのような工夫をしたのじゃ？」「もっと詳しく聞かせておくれ」と履歴書に書けるレベルまで深掘りする。
+            3. **回数制限**: ダラダラ続けず、**2〜3往復**で核心を突き、終了へ導く。
+            4. **終了**: 十分な情報が得られたら、「うむ、そなたの進むべき道が見えた……。運命の書を開くがよい」と締めくくる。
             """
             with st.spinner("キャリアガイドと通信中..."):
                 initial_response = get_gemini_response(system_prompt, api_key)
@@ -392,17 +381,18 @@ def main():
                 with st.chat_message(msg["role"], avatar=role_icon):
                     st.write(msg["content"])
         
-        # 入力欄を下に固定（プレースホルダーを見やすく修正済み）
         prompt = st.chat_input("ここに回答を入力してください...")
         if prompt:
             st.session_state.chat_history.append({"role": "user", "content": prompt})
             
             final_instruction = ""
             current_user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
-            if current_user_count >= 4:
+            
+            # 3回で終了へ誘導
+            if current_user_count >= 3:
                 final_instruction = " (※システム指示: ヒアリング終了です。これ以上質問せず、「では、運命の書に記された結果を見るがよい...」と伝え、会話を締めてください。)"
             else:
-                final_instruction = " (※システム指示: 必ずユーザーの回答に「共感」や「感想」を述べてから、次の質問や話題へ自然に繋げてください。)"
+                final_instruction = " (※システム指示: 学生の「ガクチカ」や「具体的な経験」をさらに深掘りしてください。)"
             
             with st.spinner("..."):
                 ai_res = get_gemini_response(prompt + final_instruction, api_key)
@@ -414,7 +404,7 @@ def main():
             st.session_state.step = 3
             st.rerun()
 
-    # STEP 3: 診断結果
+    # STEP 3: 診断結果 (学生向けアウトプット)
     elif st.session_state.step == 3:
         st.balloons()
         st.markdown("<h1 class='main-title' style='margin-top:20px !important; font-size: 6rem !important;'>✨ Your Destiny Card ✨</h1>", unsafe_allow_html=True)
@@ -442,17 +432,16 @@ def main():
                       formatted_history.append({"role": role, "parts": [msg["content"]]})
 
                 analysis_prompt = f"""
-                あなたは優秀なキャリア分析官です。
-                以下の「ユーザーとの会話履歴」と「基本タイプ」に基づき、このユーザーに**本当にマッチする**以下の要素を推測してください。
-                会話でユーザーが語った具体的な経験や好みを必ず反映させてください。
+                あなたは学生専門のキャリアアドバイザーです。
+                以下の「ユーザーとの会話履歴」と「基本タイプ」に基づき、この学生に最適なキャリアパスを提案してください。
                 
                 診断された基本タイプ: {base_data['title']} ({res_type})
                 
                 出力は以下のJSONフォーマットのみで行ってください:
                 {{
-                    "skills": ["スキル1", "スキル2", "スキル3"],
-                    "jobs": ["適職1", "適職2", "適職3"],
-                    "desc": "ユーザーの特性を表す、短く神秘的かつ本質的な紹介文（50文字以内）"
+                    "skills": ["今伸ばすべきスキル1", "スキル2", "スキル3"],
+                    "jobs": ["おすすめのインターン業界1", "職種2", "職種3"],
+                    "desc": "学生の強みと、それを活かせる具体的なキャリアパスを簡潔に（50文字以内）"
                 }}
                 """
                 try:
@@ -467,9 +456,9 @@ def main():
                     st.session_state.dynamic_result = json.loads(text)
                 except Exception as e:
                     st.session_state.dynamic_result = {
-                        "skills": ["潜在能力", "未知の可能性"],
-                        "jobs": ["冒険者", "自由業"],
-                        "desc": "まだ霧の中にいるようだ..."
+                        "skills": ["コミュニケーション力", "自己分析", "情報収集力"],
+                        "jobs": ["総合職", "営業", "企画"],
+                        "desc": "あなたの可能性は無限大です。まずは色々な世界を見てみましょう。"
                     }
         
         dynamic_data = st.session_state.dynamic_result
@@ -527,9 +516,9 @@ def main():
             
             st.markdown(f"""
             <div style="background: rgba(15, 15, 25, 0.9); padding: 25px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); margin-top: 10px;">
-                <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">🗝️ あなただけの獲得スキル:</p>
+                <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">🗝️ 今伸ばすべきスキル:</p>
                 <p style="font-size: 1.1em; margin-bottom: 20px;">{' / '.join(dynamic_data['skills'])}</p>
-                <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">💼 運命の適職:</p>
+                <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">💼 おすすめインターン・適職:</p>
                 <p style="font-size: 1.3em; font-weight: bold;">{' / '.join(dynamic_data['jobs'])}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -540,7 +529,8 @@ def main():
             AI分析による適職: {','.join(dynamic_data['jobs'])}
             会話履歴: {st.session_state.chat_history}
             
-            上記を踏まえ、神秘的な占い師として、キャリアのアドバイスを300文字程度で記述してください。
+            上記を踏まえ、神秘的な占い師として、学生に向けたキャリアアドバイスを300文字程度で記述してください。
+            「就活でアピールすべき点」や「残りの学生生活でやっておくべきこと」を含めてください。
             """
             with st.spinner("運命を記しています..."):
                 st.session_state.final_advice = get_gemini_response(prompt, api_key)
