@@ -70,123 +70,140 @@ def apply_custom_css(bg_image_url):
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
+        
+        /* 不要な要素を隠す */
         #MainMenu, footer, header, [data-testid="stToolbar"], .stDeployButton {{ visibility: hidden; display: none; }}
         
-        /* コンテンツの上下の余白調整 (ここを修正しました) */
+        /* 全体の余白調整 */
         .block-container {{ 
-            padding-top: 0rem !important; 
-            padding-bottom: 120px !important; /* 入力欄のためにスペースを空ける */
+            padding-top: 2rem !important; 
+            padding-bottom: 150px !important; /* 入力欄のために下を空ける */
         }}
 
+        /* 背景画像の設定 */
         .stApp {{
-            background-color: #000000; 
+            background-color: #050510; 
             background-image: {bg_image_url} !important;
             background-size: cover !important;
             background-repeat: no-repeat !important;
             background-attachment: fixed !important;
             background-position: center center !important;
         }}
+        /* 背景を少し暗くするオーバーレイ */
         .stApp::before {{
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); z-index: -1; pointer-events: none;
+            background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
         
+        /* --- テキストの装飾 --- */
         h1, h2, h3, h4, p, div, span, label, li {{
-            color: #FFFFFF !important;
+            color: #E0E0E0 !important;
             font-family: 'Shippori Mincho B1', serif;
             letter-spacing: 0.05em;
         }}
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 5px 15px rgba(0,0,0,1);
-            font-size: 5rem !important; text-align: center;
-            margin-top: 15vh !important; margin-bottom: 0 !important; letter-spacing: 0.1em;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
+            font-size: 4rem !important; text-align: center;
+            margin-top: 5vh !important;
         }}
         .intro-text {{
-            font-size: 1.5rem; line-height: 2.5; text-align: center; color: #FFD700; font-weight: 900;
-            text-shadow: 2px 2px 0 #000, 0 0 20px rgba(0,0,0,0.9);
+            font-size: 1.2rem; line-height: 2.0; text-align: center; color: #FFD700; font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* ボタンデザイン */
-        div[data-testid="stFormSubmitButton"] button, 
-        div[data-testid="stDownloadButton"] button,
-        .stButton button {{
+        /* --- チャット入力欄の劇的改善 --- */
+        /* 下部の固定エリアを透明にする */
+        [data-testid="stBottom"] {{
+            background-color: transparent !important;
+            background-image: linear-gradient(to top, #000000, rgba(0,0,0,0)); /* 下から黒くフェード */
+            padding-bottom: 20px;
+        }}
+        
+        /* 入力ボックス自体のデザイン */
+        .stChatInput textarea {{
+            background-color: rgba(20, 20, 35, 0.9) !important; /* 暗い紫紺色 */
+            color: #FFD700 !important; /* 金色の文字 */
+            border: 1px solid rgba(255, 215, 0, 0.5) !important; /* 金色の枠線 */
+            border-radius: 20px !important;
+        }}
+        /* 送信ボタンの色 */
+        [data-testid="stChatInputSubmitButton"] {{
+            color: #FFD700 !important;
+        }}
+
+        /* --- チャット吹き出しのデザイン --- */
+        .stChatMessage {{
+            background-color: rgba(10, 10, 20, 0.85) !important; /* 半透明の黒 */
+            border: 1px solid rgba(255, 215, 0, 0.3) !important;
+            border-radius: 15px !important;
+            padding: 10px !important;
+            margin-bottom: 10px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }}
+        /* ユーザーのアイコン背景 */
+        [data-testid="stChatMessageAvatarUser"] {{
+            background-color: #333 !important;
+        }}
+        /* AIのアイコン背景 */
+        [data-testid="stChatMessageAvatarAssistant"] {{
+            background-color: #220044 !important;
+        }}
+
+        /* --- ボタン共通デザイン --- */
+        .stButton button, div[data-testid="stDownloadButton"] button {{
             width: 100%;
-            background: linear-gradient(45deg, #FFD700, #FDB931) !important;
-            color: #000000 !important;
-            border: 2px solid #FFFFFF !important;
-            border-radius: 50px !important;
+            background: linear-gradient(45deg, #FFD700, #DAA520) !important;
+            color: #000 !important;
+            border: none !important;
+            border-radius: 30px !important;
             font-family: 'Cinzel', serif !important;
-            font-weight: 900 !important;
-            font-size: 1.5rem !important;
-            padding: 15px 30px !important;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
-            text-shadow: none !important;
-            margin-top: 30px !important;
-            transition: transform 0.2s;
+            font-weight: bold !important;
+            padding: 12px 24px !important;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
+            transition: all 0.3s;
         }}
-        div[data-testid="stFormSubmitButton"] button:hover, 
-        div[data-testid="stDownloadButton"] button:hover,
-        .stButton button:hover {{
-            transform: scale(1.05) !important;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 1.0) !important;
-            background: linear-gradient(45deg, #FDB931, #FFD700) !important;
+        .stButton button:hover, div[data-testid="stDownloadButton"] button:hover {{
+            transform: scale(1.02) !important;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
         }}
+        /* ダウンロードボタンの文字色強制 */
         div[data-testid="stDownloadButton"] button * {{
             color: #000000 !important;
         }}
 
+        /* --- ラジオボタンの選択肢 --- */
         div[role="radiogroup"] label {{
-            background: rgba(0, 0, 0, 0.8) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 25px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; transition: 0.3s;
-        }}
-        div[role="radiogroup"] label p {{
-            font-size: 1.2rem !important; font-weight: 900 !important; color: #FFD700 !important; text-shadow: 1px 1px 0 #000;
+            background: rgba(30, 30, 50, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            transition: 0.3s;
         }}
         div[role="radiogroup"] label:hover {{
-            border-color: #FFD700; background: rgba(50, 0, 80, 0.9) !important;
+            border-color: #FFD700; background: rgba(50, 40, 80, 0.9) !important;
         }}
 
+        /* --- 診断結果カード --- */
         .tarot-card-outer {{
-            padding: 8px;
-            background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
-            background-size: 300% 300%; border-radius: 25px;
-            animation: gradient-border 4s ease infinite;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 20px 50px rgba(0,0,0,0.8);
-            max-width: 650px; margin: 0 auto;
+            padding: 5px;
+            background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            margin: 0 auto; max-width: 600px;
         }}
         .tarot-card-inner {{
-            background: linear-gradient(to bottom, #1a0f2e, #2d1a4d), url('{URL_FRAME_GOLD}');
-            background-blend-mode: overlay;
-            border-radius: 20px; padding: 40px 30px; text-align: center;
-            border: 2px solid rgba(255, 215, 0, 0.6);
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            background: #1a0f2e;
+            border-radius: 15px; padding: 30px; text-align: center;
         }}
-        .result-image {{
-            width: 100%; max-width: 400px; height: auto; object-fit: contain;
-            margin: 25px auto; display: block;
-            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6)); border-radius: 10px;
-        }}
-        @keyframes gradient-border {{ 0% {{ background-position: 0% 50%; }} 50% {{ background-position: 100% 50%; }} 100% {{ background-position: 0% 50%; }} }}
-
         .advice-box {{
-            background-color: #f4e4bc; background-image: url('{URL_AGED_PAPER}');
-            background-blend-mode: multiply;
-            border: 4px double #8c5e24; border-radius: 15px; padding: 40px; margin-top: 40px;
-            color: #4a3b2a !important; font-family: 'Shippori Mincho B1', serif;
-            line-height: 2.2; font-weight: bold;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.6), inset 0 0 30px rgba(139, 69, 19, 0.3);
+            background: rgba(255, 248, 220, 0.9);
+            border: 3px double #8B4513;
+            border-radius: 10px; padding: 25px; margin-top: 30px;
+            color: #3E2723 !important;
         }}
-        .advice-title {{
-            color: #8c5e24 !important; font-size: 2.2em; font-weight: 900;
-            margin-bottom: 25px; border-bottom: 3px dotted #8c5e24; padding-bottom: 15px;
-            font-family: 'Cinzel', serif; text-align: center;
-        }}
-        .advice-box p, .advice-box div {{ color: #4a3b2a !important; }}
-        
-        .stChatMessage {{ background: rgba(30, 30, 50, 0.9) !important; border: 1px solid rgba(255,255,255,0.2); }}
+        .advice-box * {{ color: #3E2723 !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -336,7 +353,7 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット (ここを修正)
+    # STEP 2: チャット
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
@@ -368,10 +385,9 @@ def main():
                 with st.chat_message(msg["role"], avatar=role_icon):
                     st.write(msg["content"])
         
-        # ▼▼▼ 入力欄をカラムの外に出して、画面最下部に固定する ▼▼▼
+        # 入力欄を下に固定
         prompt = st.chat_input("回答を入力...")
         if prompt:
-            # 自分の発言を表示用に追加（描画はリラン後に行われる）
             st.session_state.chat_history.append({"role": "user", "content": prompt})
             
             final_instruction = ""
@@ -381,9 +397,6 @@ def main():
             else:
                 final_instruction = " (※システム指示: 必ずユーザーの回答に「共感」や「感想」を述べてから、次の質問や話題へ自然に繋げてください。)"
             
-            # ユーザーの入力をすぐに画面に反映させたい場合、st.rerun()で再描画を促す
-            # ただしst.chat_inputは自動でリランするため、ここでは履歴追加だけでOK
-            # AIの返答を生成して追加
             with st.spinner("..."):
                 ai_res = get_gemini_response(prompt + final_instruction, api_key)
             st.session_state.chat_history.append({"role": "assistant", "content": ai_res})
