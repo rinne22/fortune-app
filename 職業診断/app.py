@@ -5,7 +5,7 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import io  # PDF生成用のメモリ操作ライブラリ
+import io
 
 # --- PDF生成用ライブラリ ---
 from reportlab.pdfgen import canvas
@@ -45,6 +45,7 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
+    # Streamlit CloudのSecretsまたはサイドバーからキーを取得
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
     else:
@@ -55,10 +56,20 @@ def get_api_key():
         return None
 
 def get_base64_of_bin_file(bin_file):
-    if not os.path.exists(bin_file):
-        return None
+    """
+    【修正ポイント】
+    実行中のファイル(app.py)がある場所を基準にして、画像ファイルのパスを正確に作る
+    """
     try:
-        with open(bin_file, 'rb') as f:
+        # app.py のあるフォルダのパスを取得
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        # フォルダパスと画像ファイル名を合体
+        file_path = os.path.join(base_dir, bin_file)
+        
+        if not os.path.exists(file_path):
+            return None
+            
+        with open(file_path, 'rb') as f:
             data = f.read()
         return base64.b64encode(data).decode()
     except Exception:
@@ -101,7 +112,7 @@ def apply_custom_css(bg_image_url):
             text-shadow: 2px 2px 0 #000, 0 0 20px rgba(0,0,0,0.9);
         }}
 
-        /* --- ボタンデザインの修正 (ダウンロードボタンも含める) --- */
+        /* ボタンデザイン */
         div[data-testid="stFormSubmitButton"] button, 
         div[data-testid="stDownloadButton"] button,
         .stButton button {{
@@ -126,7 +137,6 @@ def apply_custom_css(bg_image_url):
             box-shadow: 0 0 30px rgba(255, 215, 0, 1.0) !important;
             background: linear-gradient(45deg, #FDB931, #FFD700) !important;
         }}
-        /* ダウンロードボタンの文字色強制 */
         div[data-testid="stDownloadButton"] button * {{
             color: #000000 !important;
         }}
@@ -184,59 +194,41 @@ def apply_custom_css(bg_image_url):
     </style>
     """, unsafe_allow_html=True)
 
-# --- PDF生成用関数 (追加機能) ---
+# --- PDF生成用関数 ---
 def create_pdf(user_type, title, skills, jobs, advice):
-    """診断結果のPDFバイナリデータを生成して返す"""
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer)
-    
-    # フォント設定 (WindowsのMSゴシックを使用)
     try:
-        # Windowsの標準フォントパス
         font_path = "C:\\Windows\\Fonts\\msgothic.ttc"
-        # Macの場合は以下のように書き換えてください
-        # font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
-        
         pdfmetrics.registerFont(TTFont('Gothic', font_path))
         font_name = 'Gothic'
     except:
-        # フォントがない場合のフォールバック（日本語は文字化けします）
         font_name = 'Helvetica'
 
-    # デザイン描画
     c.setFont(font_name, 24)
     c.drawString(50, 800, "THE FORTUNE CAREER - 鑑定書")
-    
     c.setFont(font_name, 12)
     c.drawString(400, 820, f"Date: {time.strftime('%Y/%m/%d')}")
-    
     c.line(50, 780, 550, 780)
-    
     c.setFont(font_name, 18)
     c.drawString(50, 730, f"あなたの属性: {title} ({user_type})")
-    
     c.setFont(font_name, 14)
     c.drawString(50, 680, "【獲得したスキル】")
     skills_text = " / ".join(skills) if isinstance(skills, list) else str(skills)
     c.drawString(70, 660, skills_text)
-    
     c.drawString(50, 620, "【運命の適職】")
     jobs_text = " / ".join(jobs) if isinstance(jobs, list) else str(jobs)
     c.drawString(70, 600, jobs_text)
-    
     c.drawString(50, 550, "【賢者からの助言】")
     
-    # アドバイス本文の改行処理
     c.setFont(font_name, 10)
     y_pos = 530
     clean_advice = advice.replace("**", "").replace("\n", "") 
-    
     for i in range(0, len(clean_advice), 35):
         line = clean_advice[i:i+35]
         c.drawString(60, y_pos, line)
         y_pos -= 15
-        if y_pos < 50: 
-            break
+        if y_pos < 50: break
 
     c.showPage()
     c.save()
@@ -268,7 +260,6 @@ def get_gemini_response(prompt, api_key):
         try:
             model = genai.GenerativeModel(MODEL_NAME)
             formatted_history = []
-            
             for msg in st.session_state.chat_history:
                 role = "user" if msg["role"] == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg["content"]]})
@@ -277,11 +268,9 @@ def get_gemini_response(prompt, api_key):
             response = chat.send_message(prompt)
             return response.text
         except Exception as e:
-            # エラーメッセージを整形して返す (429エラー対策)
             error_str = str(e)
             if "429" in error_str or "quota" in error_str.lower():
                 return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中による制限）。\n少し時間を置いてから、もう一度お試しください。"
-            
             if attempt < max_retries - 1: time.sleep(2); continue
             else: return f"精霊との交信が途絶えました... (Error: {error_str})"
 
@@ -297,6 +286,7 @@ def main():
     
     bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
     bg_room_base64 = get_base64_of_bin_file("room.jpg")
+    
     bg_css_url = f"url('{URL_BG_DEFAULT}')"
     if st.session_state.step == 0 and bg_mansion_base64:
         bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
@@ -350,12 +340,11 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット (具体的キャリア相談・提案型)
+    # STEP 2: チャット
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
-            
             system_prompt = f"""
             あなたは「運命の館」の占い師であり、優秀なキャリアコンサルタントです。
             ユーザーの属性は「{main_attr}」({res_type})です。
@@ -366,7 +355,7 @@ def main():
             ・ユーザーが回答したら、まずその内容に対して共感・リアクションを示してください。
             
             【進行手順】
-            1. **【重要】冒頭の提案**: まず、診断された属性「{main_attr}」から読み取れる**「ユーザーの才能や適職の仮説（提案）」**を提示してください。（例：「そなたは〜な場面でこそ輝くようじゃな。例えば〜のような役割が向いておるのではないか？」）
+            1. **【重要】冒頭の提案**: まず、診断された属性「{main_attr}」から読み取れる**「ユーザーの才能や適職の仮説（提案）」**を提示してください。
             2. その提案に対し、ユーザーがどう思うか、実際の経験と照らし合わせてどう感じるかを問いかけてください。
             3. その後、ユーザーの反応に合わせて深掘りし、合計**4往復**ほど会話を続けてください。
             4. 十分な情報が集まったら、「では、運命の書に記された結果を見るがよい...」と締めくくってください。
@@ -389,7 +378,6 @@ def main():
                 st.session_state.chat_history.append({"role": "user", "content": prompt})
                 
                 final_instruction = ""
-                # 会話回数を4回に設定
                 current_user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
                 if current_user_count >= 4:
                     final_instruction = " (※システム指示: ヒアリング終了です。これ以上質問せず、「では、運命の書に記された結果を見るがよい...」と伝え、会話を締めてください。)"
@@ -407,7 +395,7 @@ def main():
                 st.session_state.step = 3
                 st.rerun()
 
-    # STEP 3: 診断結果 (チャット内容反映版)
+    # STEP 3: 診断結果
     elif st.session_state.step == 3:
         st.balloons()
         st.markdown("<h1 class='main-title' style='margin-top:20px !important; font-size: 6rem !important;'>✨ Your Destiny Card ✨</h1>", unsafe_allow_html=True)
@@ -459,7 +447,6 @@ def main():
                     
                     st.session_state.dynamic_result = json.loads(text)
                 except Exception as e:
-                    # エラー時のフォールバック
                     st.session_state.dynamic_result = {
                         "skills": ["潜在能力", "未知の可能性"],
                         "jobs": ["冒険者", "自由業"],
@@ -546,15 +533,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- PDFダウンロード & 戻るボタン ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            # エラー文言が含まれていない場合のみダウンロードボタンを表示
             has_error = "申し訳ございません" in st.session_state.final_advice or "Error:" in st.session_state.final_advice
-            
             if st.session_state.final_advice and st.session_state.dynamic_result and not has_error:
-                # PDF作成
                 pdf_data = create_pdf(
                     res_type, 
                     base_data['title'], 
@@ -562,8 +545,6 @@ def main():
                     st.session_state.dynamic_result['jobs'], 
                     st.session_state.final_advice
                 )
-                
-                # ダウンロードボタン
                 st.download_button(
                     label="📜 運命の鑑定書をPDFで受け取る",
                     data=pdf_data,
