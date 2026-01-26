@@ -28,7 +28,7 @@ URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80
 URL_FRAME_GOLD = 'https://www.transparenttextures.com/patterns/always-grey.png'
 URL_AGED_PAPER = 'https://www.transparenttextures.com/patterns/aged-paper.png'
 
-# 質問データ (学生向けにアレンジ)
+# 質問データ (学生向け)
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -109,15 +109,65 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- チャット入力欄デザイン --- */
+        /* --- ボタンデザインの劇的改善 --- */
+        
+        /* 1. 送信ボタン & 通常ボタン */
+        div[data-testid="stFormSubmitButton"] button, 
+        .stButton button {{
+            width: 100%;
+            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important; /* 黄金のグラデーション */
+            background-size: 200% 200%;
+            color: #000000 !important; /* 文字は黒で太く */
+            border: 2px solid #FFFFFF !important;
+            border-radius: 50px !important;
+            font-family: 'Cinzel', serif !important;
+            font-weight: 900 !important;
+            font-size: 1.5rem !important;
+            padding: 15px 30px !important;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
+            text-shadow: none !important;
+            margin-top: 20px !important;
+            transition: all 0.3s ease !important;
+            animation: shine 3s infinite alternate;
+        }}
+        div[data-testid="stFormSubmitButton"] button:hover, 
+        .stButton button:hover {{
+            transform: scale(1.05) !important;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 1.0) !important;
+            background: linear-gradient(45deg, #FFFACD, #FFD700) !important; /* ホバー時はさらに明るく */
+        }}
+
+        /* 2. 選択肢（ラジオボタン）のデザイン強化 */
+        div[role="radiogroup"] label {{
+            background-color: rgba(0, 0, 0, 0.9) !important; /* 背景を濃くして文字を見やすく */
+            border: 2px solid rgba(255, 215, 0, 0.6) !important; /* 金色の枠線 */
+            padding: 20px !important; 
+            border-radius: 15px !important; 
+            margin-bottom: 15px !important; 
+            cursor: pointer; 
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }}
+        div[role="radiogroup"] label:hover {{
+            border-color: #FFD700 !important;
+            background-color: rgba(50, 50, 50, 1.0) !important;
+            transform: translateX(5px); /* ホバーで少し動く */
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }}
+        div[role="radiogroup"] label p {{
+            font-size: 1.3rem !important; 
+            font-weight: bold !important; 
+            color: #FFFFFF !important;
+            text-shadow: 1px 1px 2px #000;
+        }}
+
+        /* --- 以下、チャット等の既存スタイル --- */
         [data-testid="stBottom"] {{
-            background-color: transparent !important;
-            border: none !important;
+            background-color: transparent !important; border: none !important;
         }}
         [data-testid="stBottom"] > div {{
             background-color: transparent !important;
         }}
-        
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFFFFF !important;
@@ -126,72 +176,28 @@ def apply_custom_css(bg_image_url):
             font-weight: bold !important;
         }}
         .stChatInput textarea::placeholder {{
-            color: #CCCCCC !important;
-            opacity: 1 !important;
+            color: #CCCCCC !important; opacity: 1 !important;
         }}
         [data-testid="stChatInputSubmitButton"] {{
             color: #FFD700 !important;
         }}
-
         .stChatMessage {{
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
             padding: 10px !important;
             margin-bottom: 10px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }}
-        [data-testid="stChatMessageAvatarUser"] {{
-            background-color: #333 !important;
-        }}
-        [data-testid="stChatMessageAvatarAssistant"] {{
-            background-color: #220044 !important;
-        }}
-
-        .stButton button, div[data-testid="stDownloadButton"] button {{
-            width: 100%;
-            background: linear-gradient(45deg, #FFD700, #DAA520) !important;
-            color: #000 !important;
-            border: none !important;
-            border-radius: 30px !important;
-            font-family: 'Cinzel', serif !important;
-            font-weight: bold !important;
-            padding: 12px 24px !important;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
-            transition: all 0.3s;
-        }}
-        .stButton button:hover, div[data-testid="stDownloadButton"] button:hover {{
-            transform: scale(1.02) !important;
-            box-shadow: 0 0 25px rgba(255, 215, 0, 0.8) !important;
-        }}
-        div[data-testid="stDownloadButton"] button * {{
-            color: #000000 !important;
-        }}
-
-        div[role="radiogroup"] label {{
-            background: rgba(30, 30, 50, 0.8) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 15px; border-radius: 10px; margin-bottom: 10px;
-            transition: 0.3s;
-        }}
-        div[role="radiogroup"] label:hover {{
-            border-color: #FFD700; background: rgba(50, 40, 80, 0.9) !important;
-        }}
-
         .tarot-card-outer {{
-            padding: 5px;
-            background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
-            border-radius: 20px;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
+            border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
             margin: 0 auto; max-width: 600px;
         }}
         .tarot-card-inner {{
-            background: #1a0f2e;
-            border-radius: 15px; padding: 30px; text-align: center;
+            background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center;
         }}
         .advice-box {{
-            background: rgba(255, 248, 220, 0.9);
-            border: 3px double #8B4513;
+            background: rgba(255, 248, 220, 0.9); border: 3px double #8B4513;
             border-radius: 10px; padding: 25px; margin-top: 30px;
             color: #3E2723 !important;
         }}
@@ -345,12 +351,11 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット (学生向けキャリア面談モード)
+    # STEP 2: チャット
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
-            # ▼▼▼ 学生向けにカスタマイズされたシステムプロンプト ▼▼▼
             system_prompt = f"""
             あなたは「運命の館」の占い師ですが、正体は**「学生専門のキャリアコンサルタント」**です。
             ユーザーの属性「{main_attr}」({res_type})に基づき、就職活動や将来のキャリアに向けた具体的なアドバイスを行うため、深掘りをしてください。
@@ -388,7 +393,6 @@ def main():
             final_instruction = ""
             current_user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
             
-            # 3回で終了へ誘導
             if current_user_count >= 3:
                 final_instruction = " (※システム指示: ヒアリング終了です。これ以上質問せず、「では、運命の書に記された結果を見るがよい...」と伝え、会話を締めてください。)"
             else:
@@ -404,7 +408,7 @@ def main():
             st.session_state.step = 3
             st.rerun()
 
-    # STEP 3: 診断結果 (学生向けアウトプット)
+    # STEP 3: 診断結果
     elif st.session_state.step == 3:
         st.balloons()
         st.markdown("<h1 class='main-title' style='margin-top:20px !important; font-size: 6rem !important;'>✨ Your Destiny Card ✨</h1>", unsafe_allow_html=True)
