@@ -45,7 +45,6 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
-    # Streamlit CloudのSecretsまたはサイドバーからキーを取得
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
     else:
@@ -56,19 +55,11 @@ def get_api_key():
         return None
 
 def get_base64_of_bin_file(bin_file):
-    """
-    【修正ポイント】
-    実行中のファイル(app.py)がある場所を基準にして、画像ファイルのパスを正確に作る
-    """
     try:
-        # app.py のあるフォルダのパスを取得
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        # フォルダパスと画像ファイル名を合体
         file_path = os.path.join(base_dir, bin_file)
-        
         if not os.path.exists(file_path):
             return None
-            
         with open(file_path, 'rb') as f:
             data = f.read()
         return base64.b64encode(data).decode()
@@ -80,7 +71,12 @@ def apply_custom_css(bg_image_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         #MainMenu, footer, header, [data-testid="stToolbar"], .stDeployButton {{ visibility: hidden; display: none; }}
-        .block-container {{ padding-top: 0rem !important; padding-bottom: 0rem !important; }}
+        
+        /* コンテンツの上下の余白調整 (ここを修正しました) */
+        .block-container {{ 
+            padding-top: 0rem !important; 
+            padding-bottom: 120px !important; /* 入力欄のためにスペースを空ける */
+        }}
 
         .stApp {{
             background-color: #000000; 
@@ -340,7 +336,7 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット
+    # STEP 2: チャット (ここを修正)
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
@@ -371,29 +367,32 @@ def main():
                 role_icon = "🔮" if msg["role"] == "assistant" else "👤"
                 with st.chat_message(msg["role"], avatar=role_icon):
                     st.write(msg["content"])
+        
+        # ▼▼▼ 入力欄をカラムの外に出して、画面最下部に固定する ▼▼▼
+        prompt = st.chat_input("回答を入力...")
+        if prompt:
+            # 自分の発言を表示用に追加（描画はリラン後に行われる）
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
             
-            prompt = st.chat_input("回答を入力...")
-            if prompt:
-                with st.chat_message("user", avatar="👤"): st.write(prompt)
-                st.session_state.chat_history.append({"role": "user", "content": prompt})
-                
-                final_instruction = ""
-                current_user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
-                if current_user_count >= 4:
-                    final_instruction = " (※システム指示: ヒアリング終了です。これ以上質問せず、「では、運命の書に記された結果を見るがよい...」と伝え、会話を締めてください。)"
-                else:
-                    final_instruction = " (※システム指示: 必ずユーザーの回答に「共感」や「感想」を述べてから、次の質問や話題へ自然に繋げてください。)"
-                
-                with st.chat_message("assistant", avatar="🔮"):
-                    with st.spinner("..."):
-                        ai_res = get_gemini_response(prompt + final_instruction, api_key)
-                        st.write(ai_res)
-                st.session_state.chat_history.append({"role": "assistant", "content": ai_res})
+            final_instruction = ""
+            current_user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
+            if current_user_count >= 4:
+                final_instruction = " (※システム指示: ヒアリング終了です。これ以上質問せず、「では、運命の書に記された結果を見るがよい...」と伝え、会話を締めてください。)"
+            else:
+                final_instruction = " (※システム指示: 必ずユーザーの回答に「共感」や「感想」を述べてから、次の質問や話題へ自然に繋げてください。)"
+            
+            # ユーザーの入力をすぐに画面に反映させたい場合、st.rerun()で再描画を促す
+            # ただしst.chat_inputは自動でリランするため、ここでは履歴追加だけでOK
+            # AIの返答を生成して追加
+            with st.spinner("..."):
+                ai_res = get_gemini_response(prompt + final_instruction, api_key)
+            st.session_state.chat_history.append({"role": "assistant", "content": ai_res})
+            st.rerun()
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("📜 運命の書を開く（診断結果へ）"):
-                st.session_state.step = 3
-                st.rerun()
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("📜 運命の書を開く（診断結果へ）"):
+            st.session_state.step = 3
+            st.rerun()
 
     # STEP 3: 診断結果
     elif st.session_state.step == 3:
