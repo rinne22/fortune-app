@@ -109,7 +109,7 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザイン --- */
+        /* --- ボタンデザインの劇的改善 --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button {{
             width: 100%;
@@ -135,6 +135,7 @@ def apply_custom_css(bg_image_url):
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
         }}
 
+        /* 選択肢のデザイン強化 */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -579,3 +580,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
