@@ -87,10 +87,17 @@ def apply_custom_css(bg_image_url):
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
         
-        /* 印刷時の設定: ボタンなどを隠す */
+        /* --- 印刷時の設定 (ここを修正しました) --- */
         @media print {{
-            .stApp {{ background-image: none !important; background-color: #050510 !important; }}
-            div[data-testid="stFormSubmitButton"], .stButton, header, footer, [data-testid="stToolbar"] {{ display: none !important; }}
+            /* 背景を強制的に出力させる設定 */
+            .stApp {{
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }}
+            /* ボタンなどの不要なパーツを隠す */
+            div[data-testid="stFormSubmitButton"], .stButton, header, footer, [data-testid="stToolbar"] {{ 
+                display: none !important; 
+            }}
             .block-container {{ padding-top: 0 !important; }}
         }}
         
@@ -505,7 +512,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 印刷ボタン（修正版: 何度でも反応します） ---
+        # --- 印刷ボタン（修正版: キャッシュ回避） ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
@@ -523,3 +530,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
