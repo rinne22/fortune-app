@@ -5,12 +5,7 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import io
-
-# --- PDF生成用ライブラリ ---
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+import streamlit.components.v1 as components # 印刷機能のために追加
 
 # --- 設定: Geminiモデル ---
 MODEL_NAME = "gemini-2.5-flash"
@@ -78,6 +73,7 @@ def apply_custom_css(bg_image_url):
             padding-bottom: 150px !important; 
         }}
 
+        /* 背景画像の設定 */
         .stApp {{
             background-color: #050510; 
             background-image: {bg_image_url} !important;
@@ -89,6 +85,13 @@ def apply_custom_css(bg_image_url):
         .stApp::before {{
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
+        }}
+        
+        /* 印刷時の設定: ボタンなどを隠す */
+        @media print {{
+            .stApp {{ background-image: none !important; background-color: #050510 !important; }}
+            div[data-testid="stFormSubmitButton"], .stButton, header, footer, [data-testid="stToolbar"] {{ display: none !important; }}
+            .block-container {{ padding-top: 0 !important; }}
         }}
         
         h1, h2, h3, h4, p, div, span, label, li {{
@@ -109,7 +112,7 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザインの劇的改善 --- */
+        /* --- ボタンデザイン --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button {{
             width: 100%;
@@ -135,7 +138,7 @@ def apply_custom_css(bg_image_url):
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
         }}
 
-        /* 選択肢のデザイン強化 */
+        /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -201,56 +204,6 @@ def apply_custom_css(bg_image_url):
         .advice-box * {{ color: #3E2723 !important; }}
     </style>
     """, unsafe_allow_html=True)
-
-# --- PDF生成用関数 (日本語フォント対応版) ---
-def create_pdf(user_type, title, skills, jobs, advice):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer)
-    
-    # ---------------------------------------------------------
-    # 【重要】GitHubにある日本語フォント(ipaexg.ttf)を読み込む処理
-    # ---------------------------------------------------------
-    try:
-        # このファイル(app.py)と同じ場所にある ipaexg.ttf を探す
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        font_path = os.path.join(base_dir, "ipaexg.ttf")
-        
-        # フォント登録
-        pdfmetrics.registerFont(TTFont('IPAexGothic', font_path))
-        font_name = 'IPAexGothic'
-    except:
-        # 失敗したら英語フォント（文字化けします）
-        font_name = 'Helvetica'
-
-    c.setFont(font_name, 24)
-    c.drawString(50, 800, "THE FORTUNE CAREER - 鑑定書")
-    c.setFont(font_name, 12)
-    c.drawString(400, 820, f"Date: {time.strftime('%Y/%m/%d')}")
-    c.line(50, 780, 550, 780)
-    c.setFont(font_name, 18)
-    c.drawString(50, 730, f"あなたの属性: {title} ({user_type})")
-    c.setFont(font_name, 14)
-    c.drawString(50, 680, "【獲得したスキル】")
-    skills_text = " / ".join(skills) if isinstance(skills, list) else str(skills)
-    c.drawString(70, 660, skills_text)
-    c.drawString(50, 620, "【おすすめインターン・適職】")
-    jobs_text = " / ".join(jobs) if isinstance(jobs, list) else str(jobs)
-    c.drawString(70, 600, jobs_text)
-    c.drawString(50, 550, "【賢者からの助言】")
-    
-    c.setFont(font_name, 10)
-    y_pos = 530
-    clean_advice = advice.replace("**", "").replace("\n", "") 
-    for i in range(0, len(clean_advice), 35):
-        line = clean_advice[i:i+35]
-        c.drawString(60, y_pos, line)
-        y_pos -= 15
-        if y_pos < 50: break
-
-    c.showPage()
-    c.save()
-    buffer.seek(0)
-    return buffer
 
 # --- ロジック関数 ---
 def calculate_type():
@@ -552,26 +505,15 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
+        # --- 印刷ボタンセクション ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            has_error = "申し訳ございません" in st.session_state.final_advice or "Error:" in st.session_state.final_advice
-            if st.session_state.final_advice and st.session_state.dynamic_result and not has_error:
-                pdf_data = create_pdf(
-                    res_type, 
-                    base_data['title'], 
-                    st.session_state.dynamic_result['skills'], 
-                    st.session_state.dynamic_result['jobs'], 
-                    st.session_state.final_advice
-                )
-                st.download_button(
-                    label="📜 運命の鑑定書をPDFで受け取る",
-                    data=pdf_data,
-                    file_name="fortune_career_result.pdf",
-                    mime="application/pdf"
-                )
-            elif has_error:
-                st.warning("⚠️ 現在、アクセスの集中により鑑定書を発行できませんでした。時間を置いて再試行してください。")
+            if st.button("🖨️ この結果を印刷 / PDF保存する"):
+                # JavaScriptで印刷ダイアログを開く
+                components.html("<script>window.print();</script>", height=0, width=0)
+            
+            st.caption("※開いた画面の送信先で「PDFに保存」を選び、詳細設定で「背景グラフィック」にチェックを入れてください。")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 最初に戻る"):
@@ -580,4 +522,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
