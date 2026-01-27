@@ -5,7 +5,6 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import streamlit.components.v1 as components
 
 # --- 設定: Geminiモデル ---
 MODEL_NAME = "gemini-2.5-flash"
@@ -61,6 +60,119 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
+# --- HTML生成関数（ここがポイント） ---
+def create_result_html(base_data, dynamic_data, final_advice, img_base64):
+    """結果画面のデザインをそのままHTMLファイルとして作成する関数"""
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>運命の鑑定書 - {base_data['title']}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            body {{
+                background-color: #050510;
+                color: #E0E0E0;
+                font-family: 'Shippori Mincho B1', serif;
+                text-align: center;
+                padding: 40px;
+            }}
+            .container {{
+                max-width: 800px;
+                margin: 0 auto;
+                background-image: url('https://www.transparenttextures.com/patterns/always-grey.png');
+                background-color: #1a0f2e;
+                border: 4px double #FFD700;
+                border-radius: 20px;
+                padding: 40px;
+                box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+            }}
+            h1 {{
+                font-family: 'Cinzel', serif;
+                color: #FFD700;
+                font-size: 3em;
+                margin-bottom: 10px;
+                text-shadow: 0 0 10px #FFD700;
+            }}
+            .sub-title {{
+                color: #AAAAAA;
+                letter-spacing: 0.2em;
+                margin-bottom: 30px;
+            }}
+            .main-img {{
+                width: 300px;
+                height: 300px;
+                object-fit: cover;
+                border-radius: 50%;
+                border: 3px solid #FFD700;
+                margin: 20px auto;
+                display: block;
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            }}
+            .section-box {{
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 20px;
+                margin: 30px 0;
+                text-align: left;
+            }}
+            .section-title {{
+                color: #FFD700;
+                font-weight: bold;
+                font-size: 1.2em;
+                border-bottom: 1px solid #FFD700;
+                padding-bottom: 5px;
+                margin-bottom: 15px;
+            }}
+            .advice-text {{
+                line-height: 2.0;
+                font-size: 1.1em;
+            }}
+            ul {{ padding-left: 20px; }}
+            li {{ margin-bottom: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>{base_data['title']}</h1>
+            <div class="sub-title">{base_data['sub']}</div>
+            
+            <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
+            
+            <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">
+                “{dynamic_data.get('desc', '運命は開かれた')}”
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">🗝️ 今伸ばすべきスキル</div>
+                <ul>
+                    {''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}
+                </ul>
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">💼 おすすめインターン・適職</div>
+                <ul>
+                    {''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}
+                </ul>
+            </div>
+
+            <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;">
+                <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
+                <div class="advice-text">
+                    {final_advice.replace('\n', '<br>')}
+                </div>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by AI Fortune Career</p>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
 def apply_custom_css(bg_image_url):
     st.markdown(f"""
     <style>
@@ -73,7 +185,6 @@ def apply_custom_css(bg_image_url):
             padding-bottom: 150px !important; 
         }}
 
-        /* 背景画像の設定 */
         .stApp {{
             background-color: #050510; 
             background-image: {bg_image_url} !important;
@@ -85,20 +196,6 @@ def apply_custom_css(bg_image_url):
         .stApp::before {{
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
-        }}
-        
-        /* --- 印刷時の設定 (ここを修正しました) --- */
-        @media print {{
-            /* 背景を強制的に出力させる設定 */
-            .stApp {{
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }}
-            /* ボタンなどの不要なパーツを隠す */
-            div[data-testid="stFormSubmitButton"], .stButton, header, footer, [data-testid="stToolbar"] {{ 
-                display: none !important; 
-            }}
-            .block-container {{ padding-top: 0 !important; }}
         }}
         
         h1, h2, h3, h4, p, div, span, label, li {{
@@ -119,12 +216,11 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザイン --- */
+        /* ボタンデザイン */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            background-size: 200% 200%;
             color: #000000 !important;
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
@@ -133,10 +229,8 @@ def apply_custom_css(bg_image_url):
             font-size: 1.5rem !important;
             padding: 15px 30px !important;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
-            text-shadow: none !important;
             margin-top: 20px !important;
             transition: all 0.3s ease !important;
-            animation: shine 3s infinite alternate;
         }}
         div[data-testid="stFormSubmitButton"] button:hover, 
         .stButton button:hover {{
@@ -154,47 +248,26 @@ def apply_custom_css(bg_image_url):
             margin-bottom: 15px !important; 
             cursor: pointer; 
             transition: 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }}
         div[role="radiogroup"] label:hover {{
             border-color: #FFD700 !important;
             background-color: rgba(50, 50, 50, 1.0) !important;
-            transform: translateX(5px);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }}
-        div[role="radiogroup"] label p {{
-            font-size: 1.3rem !important; 
-            font-weight: bold !important; 
-            color: #FFFFFF !important;
-            text-shadow: 1px 1px 2px #000;
-        }}
-
-        [data-testid="stBottom"] {{
-            background-color: transparent !important; border: none !important;
-        }}
-        [data-testid="stBottom"] > div {{
-            background-color: transparent !important;
-        }}
+        
+        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
+        [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFFFFF !important;
             border: 2px solid #FFD700 !important;
             border-radius: 20px !important;
-            font-weight: bold !important;
-        }}
-        .stChatInput textarea::placeholder {{
-            color: #CCCCCC !important; opacity: 1 !important;
-        }}
-        [data-testid="stChatInputSubmitButton"] {{
-            color: #FFD700 !important;
         }}
         .stChatMessage {{
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
-            padding: 10px !important;
-            margin-bottom: 10px !important;
         }}
+        
         .tarot-card-outer {{
             padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
             border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
@@ -434,7 +507,7 @@ def main():
         dynamic_data = st.session_state.dynamic_result
         
         user_icon = get_base64_of_bin_file(base_data['file'])
-        final_img_src = f"data:image/jpeg;base64,{user_icon}" if user_icon else base_data['ph']
+        final_img_src = base_data['file'] if user_icon else "" # Base64エンコード用
 
         raw_scores = {"fire": 0, "water": 0, "wind": 0}
         for q_id, selected_label in st.session_state.answers.items():
@@ -469,12 +542,13 @@ def main():
 
         col_res1, col_res2 = st.columns([1, 1], gap="large")
         with col_res1:
+            # 画面表示用のカード
             st.markdown(f"""
             <div class="tarot-card-outer">
                 <div class="tarot-card-inner">
                     <div class="result-sub" style="font-size: 1.2em; letter-spacing: 0.2em;">{base_data['sub']}</div>
                     <div class="result-title" style="font-size: 2.5em; margin: 15px 0;">{base_data['title']}</div>
-                    <img src="{final_img_src}" class="result-image">
+                    <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" class="result-image" style="width:100%; max-width:300px; border-radius:10px;">
                     <div class="result-desc" style="font-size: 1.3em; font-style: italic;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
                 </div>
             </div>
@@ -512,16 +586,21 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 印刷ボタン（修正版: キャッシュ回避） ---
+        # --- 保存ボタン（ここを変更！） ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            if st.button("🖨️ この結果を印刷 / PDF保存する"):
-                # 現在時刻をコードに埋め込んで、毎回違うJavaScriptを実行させる（キャッシュ回避）
-                js_code = f"<script>window.print(); console.log('{time.time()}');</script>"
-                components.html(js_code, height=0, width=0)
+            # HTMLファイルを生成
+            html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
             
-            st.caption("※開いた画面で「送信先：PDFに保存」を選び、詳細設定の「背景グラフィック」にチェックを入れてください。")
+            # ダウンロードボタンを表示
+            st.download_button(
+                label="📄 結果をHTMLファイルで保存",
+                data=html_data,
+                file_name="fortune_result.html",
+                mime="text/html"
+            )
+            st.caption("※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 最初に戻る"):
