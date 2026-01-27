@@ -11,7 +11,7 @@ MODEL_NAME = "gemini-2.5-flash"
 
 # --- ページ設定 ---
 st.set_page_config(
-    page_title="AI適職占いの館 For Students",
+    page_title="FORTUNE CAREER - 学生のためのAI職業診断",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -164,7 +164,7 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 </div>
             </div>
             
-            <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by AI Fortune Career</p>
+            <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
         </div>
     </body>
     </html>
@@ -214,15 +214,14 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザインの統一（ここを修正！） --- */
-        /* 通常ボタン、送信ボタン、そして【ダウンロードボタン】も対象にする */
+        /* --- ボタンデザインの統一 --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
             width: 100%;
-            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important; /* 黄金 */
+            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
             background-size: 200% 200%;
-            color: #000000 !important; /* 文字は黒 */
+            color: #000000 !important;
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -236,7 +235,6 @@ def apply_custom_css(bg_image_url):
             animation: shine 3s infinite alternate;
         }}
         
-        /* ホバー時の設定 */
         div[data-testid="stFormSubmitButton"] button:hover, 
         .stButton button:hover,
         div[data-testid="stDownloadButton"] button:hover {{
@@ -246,7 +244,6 @@ def apply_custom_css(bg_image_url):
             color: #000000 !important;
         }}
         
-        /* ダウンロードボタンの中の要素（テキストなど）も黒色を強制 */
         div[data-testid="stDownloadButton"] button * {{
             color: #000000 !important;
         }}
@@ -287,6 +284,8 @@ def apply_custom_css(bg_image_url):
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
+            padding: 10px !important;
+            margin-bottom: 10px !important;
         }}
         
         .tarot-card-outer {{
@@ -366,12 +365,12 @@ def main():
     
     apply_custom_css(bg_css_url)
 
-    # STEP 0: トップページ
+    # STEP 0: トップページ (タイトル変更)
     if st.session_state.step == 0:
         st.markdown("""
         <div style="text-align: center;">
             <h1 class="main-title">FORTUNE CAREER</h1>
-            <p style='letter-spacing: 0.5em; color: #FFD700; font-size: 1.2em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>AI 適職占いの館<br>For Students</p>
+            <p style='letter-spacing: 0.1em; color: #FFD700; font-size: 1.5em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>〜 学生のためのAI職業診断 〜</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -626,4 +625,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
