@@ -109,15 +109,13 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザインの劇的改善 --- */
-        
-        /* 1. 送信ボタン & 通常ボタン */
+        /* --- ボタンデザイン --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button {{
             width: 100%;
-            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important; /* 黄金のグラデーション */
+            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
             background-size: 200% 200%;
-            color: #000000 !important; /* 文字は黒で太く */
+            color: #000000 !important;
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -134,13 +132,12 @@ def apply_custom_css(bg_image_url):
         .stButton button:hover {{
             transform: scale(1.05) !important;
             box-shadow: 0 0 40px rgba(255, 215, 0, 1.0) !important;
-            background: linear-gradient(45deg, #FFFACD, #FFD700) !important; /* ホバー時はさらに明るく */
+            background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
         }}
 
-        /* 2. 選択肢（ラジオボタン）のデザイン強化 */
         div[role="radiogroup"] label {{
-            background-color: rgba(0, 0, 0, 0.9) !important; /* 背景を濃くして文字を見やすく */
-            border: 2px solid rgba(255, 215, 0, 0.6) !important; /* 金色の枠線 */
+            background-color: rgba(0, 0, 0, 0.9) !important;
+            border: 2px solid rgba(255, 215, 0, 0.6) !important;
             padding: 20px !important; 
             border-radius: 15px !important; 
             margin-bottom: 15px !important; 
@@ -151,7 +148,7 @@ def apply_custom_css(bg_image_url):
         div[role="radiogroup"] label:hover {{
             border-color: #FFD700 !important;
             background-color: rgba(50, 50, 50, 1.0) !important;
-            transform: translateX(5px); /* ホバーで少し動く */
+            transform: translateX(5px);
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }}
         div[role="radiogroup"] label p {{
@@ -161,7 +158,6 @@ def apply_custom_css(bg_image_url):
             text-shadow: 1px 1px 2px #000;
         }}
 
-        /* --- 以下、チャット等の既存スタイル --- */
         [data-testid="stBottom"] {{
             background-color: transparent !important; border: none !important;
         }}
@@ -205,15 +201,24 @@ def apply_custom_css(bg_image_url):
     </style>
     """, unsafe_allow_html=True)
 
-# --- PDF生成用関数 ---
+# --- PDF生成用関数 (日本語フォント対応版) ---
 def create_pdf(user_type, title, skills, jobs, advice):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer)
+    
+    # ---------------------------------------------------------
+    # 【重要】GitHubにある日本語フォント(ipaexg.ttf)を読み込む処理
+    # ---------------------------------------------------------
     try:
-        font_path = "C:\\Windows\\Fonts\\msgothic.ttc"
-        pdfmetrics.registerFont(TTFont('Gothic', font_path))
-        font_name = 'Gothic'
+        # このファイル(app.py)と同じ場所にある ipaexg.ttf を探す
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        font_path = os.path.join(base_dir, "ipaexg.ttf")
+        
+        # フォント登録
+        pdfmetrics.registerFont(TTFont('IPAexGothic', font_path))
+        font_name = 'IPAexGothic'
     except:
+        # 失敗したら英語フォント（文字化けします）
         font_name = 'Helvetica'
 
     c.setFont(font_name, 24)
