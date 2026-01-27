@@ -60,10 +60,8 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
-# --- HTML生成関数（ここがポイント） ---
+# --- HTML生成関数 ---
 def create_result_html(base_data, dynamic_data, final_advice, img_base64):
-    """結果画面のデザインをそのままHTMLファイルとして作成する関数"""
-    
     html = f"""
     <!DOCTYPE html>
     <html lang="ja">
@@ -216,12 +214,15 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* ボタンデザイン */
+        /* --- ボタンデザインの統一（ここを修正！） --- */
+        /* 通常ボタン、送信ボタン、そして【ダウンロードボタン】も対象にする */
         div[data-testid="stFormSubmitButton"] button, 
-        .stButton button {{
+        .stButton button,
+        div[data-testid="stDownloadButton"] button {{
             width: 100%;
-            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important;
+            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important; /* 黄金 */
+            background-size: 200% 200%;
+            color: #000000 !important; /* 文字は黒 */
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -229,14 +230,25 @@ def apply_custom_css(bg_image_url):
             font-size: 1.5rem !important;
             padding: 15px 30px !important;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
+            text-shadow: none !important;
             margin-top: 20px !important;
             transition: all 0.3s ease !important;
+            animation: shine 3s infinite alternate;
         }}
+        
+        /* ホバー時の設定 */
         div[data-testid="stFormSubmitButton"] button:hover, 
-        .stButton button:hover {{
+        .stButton button:hover,
+        div[data-testid="stDownloadButton"] button:hover {{
             transform: scale(1.05) !important;
             box-shadow: 0 0 40px rgba(255, 215, 0, 1.0) !important;
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
+            color: #000000 !important;
+        }}
+        
+        /* ダウンロードボタンの中の要素（テキストなど）も黒色を強制 */
+        div[data-testid="stDownloadButton"] button * {{
+            color: #000000 !important;
         }}
 
         /* 選択肢のデザイン */
@@ -248,12 +260,21 @@ def apply_custom_css(bg_image_url):
             margin-bottom: 15px !important; 
             cursor: pointer; 
             transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }}
         div[role="radiogroup"] label:hover {{
             border-color: #FFD700 !important;
             background-color: rgba(50, 50, 50, 1.0) !important;
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }}
-        
+        div[role="radiogroup"] label p {{
+            font-size: 1.3rem !important; 
+            font-weight: bold !important; 
+            color: #FFFFFF !important;
+            text-shadow: 1px 1px 2px #000;
+        }}
+
         [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
         [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
         .stChatInput textarea {{
@@ -507,7 +528,7 @@ def main():
         dynamic_data = st.session_state.dynamic_result
         
         user_icon = get_base64_of_bin_file(base_data['file'])
-        final_img_src = base_data['file'] if user_icon else "" # Base64エンコード用
+        final_img_src = base_data['file'] if user_icon else ""
 
         raw_scores = {"fire": 0, "water": 0, "wind": 0}
         for q_id, selected_label in st.session_state.answers.items():
@@ -542,7 +563,6 @@ def main():
 
         col_res1, col_res2 = st.columns([1, 1], gap="large")
         with col_res1:
-            # 画面表示用のカード
             st.markdown(f"""
             <div class="tarot-card-outer">
                 <div class="tarot-card-inner">
@@ -586,14 +606,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 保存ボタン（ここを変更！） ---
+        # --- HTMLダウンロードボタン ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            # HTMLファイルを生成
             html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
-            
-            # ダウンロードボタンを表示
             st.download_button(
                 label="📄 結果をHTMLファイルで保存",
                 data=html_data,
