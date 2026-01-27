@@ -5,7 +5,7 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import streamlit.components.v1 as components # 印刷機能のために追加
+import streamlit.components.v1 as components
 
 # --- 設定: Geminiモデル ---
 MODEL_NAME = "gemini-2.5-flash"
@@ -505,15 +505,16 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 印刷ボタンセクション ---
+        # --- 印刷ボタン（修正版: 何度でも反応します） ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
             if st.button("🖨️ この結果を印刷 / PDF保存する"):
-                # JavaScriptで印刷ダイアログを開く
-                components.html("<script>window.print();</script>", height=0, width=0)
+                # 現在時刻をコードに埋め込んで、毎回違うJavaScriptを実行させる（キャッシュ回避）
+                js_code = f"<script>window.print(); console.log('{time.time()}');</script>"
+                components.html(js_code, height=0, width=0)
             
-            st.caption("※開いた画面の送信先で「PDFに保存」を選び、詳細設定で「背景グラフィック」にチェックを入れてください。")
+            st.caption("※開いた画面で「送信先：PDFに保存」を選び、詳細設定の「背景グラフィック」にチェックを入れてください。")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 最初に戻る"):
