@@ -5,9 +5,11 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
+import streamlit.components.v1 as components
 
-# --- 設定: Geminiモデル ---
-MODEL_NAME = "gemini-2.5-flash"
+# --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
+# 2.0-flashがダメなら1.5-flash、それもダメなら1.5-proに自動で切り替わります
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -91,13 +93,23 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 font-family: 'Cinzel', serif;
                 color: #FFD700;
                 font-size: 3em;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
                 text-shadow: 0 0 10px #FFD700;
             }}
             .sub-title {{
                 color: #AAAAAA;
                 letter-spacing: 0.2em;
-                margin-bottom: 30px;
+                margin-bottom: 20px;
+            }}
+            .catchphrase {{
+                color: #FFD700;
+                font-weight: bold;
+                font-size: 1.2em;
+                margin-bottom: 20px;
+                background: rgba(255, 215, 0, 0.1);
+                display: inline-block;
+                padding: 5px 15px;
+                border-radius: 20px;
             }}
             .main-img {{
                 width: 300px;
@@ -105,7 +117,7 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 object-fit: cover;
                 border-radius: 50%;
                 border: 3px solid #FFD700;
-                margin: 20px auto;
+                margin: 10px auto;
                 display: block;
                 box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
             }}
@@ -136,6 +148,7 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
         <div class="container">
             <h1>{base_data['title']}</h1>
             <div class="sub-title">{base_data['sub']}</div>
+            <div class="catchphrase">{base_data['simple_text']}</div>
             
             <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
             
@@ -214,7 +227,7 @@ def apply_custom_css(bg_image_url):
             background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
         }}
 
-        /* --- ボタンデザインの統一 --- */
+        /* --- ボタンデザイン --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
@@ -296,6 +309,10 @@ def apply_custom_css(bg_image_url):
         .tarot-card-inner {{
             background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center;
         }}
+        .result-simple-text {{
+            color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block;
+        }}
         .advice-box {{
             background: rgba(255, 248, 220, 0.9); border: 3px double #8B4513;
             border-radius: 10px; padding: 25px; margin-top: 30px;
@@ -322,13 +339,15 @@ def calculate_type():
     res_type = first_attr if (first_score - second_score >= 2) else "-".join(sorted([first_attr, second_attr]))
     return res_type, first_attr
 
+# --- AI応答関数（API制限対策・自動切り替え機能付き） ---
 def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
-    max_retries = 3
-    for attempt in range(max_retries):
+    
+    # 複数のモデルを順番に試すループ
+    for model_name in MODELS_TO_TRY:
         try:
-            model = genai.GenerativeModel(MODEL_NAME)
+            model = genai.GenerativeModel(model_name)
             formatted_history = []
             for msg in st.session_state.chat_history:
                 role = "user" if msg["role"] == "user" else "model"
@@ -336,13 +355,15 @@ def get_gemini_response(prompt, api_key):
             
             chat = model.start_chat(history=formatted_history)
             response = chat.send_message(prompt)
-            return response.text
+            return response.text # 成功したらここで終了
+            
         except Exception as e:
-            error_str = str(e)
-            if "429" in error_str or "quota" in error_str.lower():
-                return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中による制限）。\n少し時間を置いてから、もう一度お試しください。"
-            if attempt < max_retries - 1: time.sleep(2); continue
-            else: return f"精霊との交信が途絶えました... (Error: {error_str})"
+            # エラーが出たら次のモデルへ
+            print(f"Model {model_name} failed: {e}")
+            continue
+    
+    # 全てのモデルがダメだった場合
+    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中）。時間を置いて再度お試しください。"
 
 # --- メイン処理 ---
 def main():
@@ -365,7 +386,7 @@ def main():
     
     apply_custom_css(bg_css_url)
 
-    # STEP 0: トップページ (タイトル変更)
+    # STEP 0: トップページ
     if st.session_state.step == 0:
         st.markdown("""
         <div style="text-align: center;">
@@ -474,50 +495,60 @@ def main():
         
         res_type, _ = calculate_type()
         
+        # タイプ情報に「わかりやすい説明 (simple_text)」を追加
         type_info = {
-            "fire": {"title": "開拓の騎士", "sub": "THE LEADER", "file": "icon_fire.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Leader"},
-            "water": {"title": "叡智の賢者", "sub": "THE ENGINEER", "file": "icon_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Wizard"},
-            "wind": {"title": "調和の精霊", "sub": "THE HEALER", "file": "icon_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Healer"},
-            "fire-water": {"title": "蒼炎の軍師", "sub": "THE STRATEGIST", "file": "icon_fire_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Strategist"},
-            "fire-wind": {"title": "陽光の詩人", "sub": "THE ARTIST", "file": "icon_fire_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Artist"},
-            "water-wind": {"title": "星詠みの司書", "sub": "THE GUIDE", "file": "icon_water_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Guide"},
+            "fire": {"title": "開拓の騎士", "sub": "THE LEADER", "simple_text": "行動力と情熱でチームを引っ張るリーダータイプ", "file": "icon_fire.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Leader"},
+            "water": {"title": "叡智の賢者", "sub": "THE ENGINEER", "simple_text": "論理的思考で問題を解決する分析・開発タイプ", "file": "icon_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Wizard"},
+            "wind": {"title": "調和の精霊", "sub": "THE HEALER", "simple_text": "周りと協力して空気を良くするサポータータイプ", "file": "icon_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Healer"},
+            "fire-water": {"title": "蒼炎の軍師", "sub": "THE STRATEGIST", "simple_text": "冷静な計算と大胆な行動を併せ持つ戦略家タイプ", "file": "icon_fire_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Strategist"},
+            "fire-wind": {"title": "陽光の詩人", "sub": "THE ARTIST", "simple_text": "独自の感性で人を惹きつける表現者タイプ", "file": "icon_fire_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Artist"},
+            "water-wind": {"title": "星詠みの司書", "sub": "THE GUIDE", "simple_text": "知識と優しさで人を導くアドバイザータイプ", "file": "icon_water_wind.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Guide"},
         }
         base_data = type_info.get(res_type, type_info["fire"])
 
         if not st.session_state.dynamic_result:
             with st.spinner("精霊たちが会話の記憶から、あなたの真の能力を紡ぎ出しています..."):
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel(MODEL_NAME)
                 
-                formatted_history = []
-                for msg in st.session_state.chat_history:
-                      role = "user" if msg["role"] == "user" else "model"
-                      formatted_history.append({"role": role, "parts": [msg["content"]]})
+                # ここもモデル切り替え対応版のロジックを使用
+                success = False
+                for model_name in MODELS_TO_TRY:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        formatted_history = []
+                        for msg in st.session_state.chat_history:
+                            role = "user" if msg["role"] == "user" else "model"
+                            formatted_history.append({"role": role, "parts": [msg["content"]]})
 
-                analysis_prompt = f"""
-                あなたは学生専門のキャリアアドバイザーです。
-                以下の「ユーザーとの会話履歴」と「基本タイプ」に基づき、この学生に最適なキャリアパスを提案してください。
+                        analysis_prompt = f"""
+                        あなたは学生専門のキャリアアドバイザーです。
+                        以下の「ユーザーとの会話履歴」と「基本タイプ」に基づき、この学生に最適なキャリアパスを提案してください。
+                        
+                        診断された基本タイプ: {base_data['title']} ({res_type})
+                        
+                        出力は以下のJSONフォーマットのみで行ってください:
+                        {{
+                            "skills": ["今伸ばすべきスキル1", "スキル2", "スキル3"],
+                            "jobs": ["おすすめのインターン業界1", "職種2", "職種3"],
+                            "desc": "学生の強みと、それを活かせる具体的なキャリアパスを簡潔に（50文字以内）"
+                        }}
+                        """
+                        chat_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history])
+                        full_prompt = analysis_prompt + "\n\n【会話履歴】\n" + chat_text
+                        
+                        response = model.generate_content(full_prompt)
+                        text = response.text.strip()
+                        if text.startswith("```json"): text = text[7:]
+                        if text.endswith("```"): text = text[:-3]
+                        
+                        st.session_state.dynamic_result = json.loads(text)
+                        success = True
+                        break # 成功したらループを抜ける
+                    except Exception as e:
+                        print(f"Analysis Model {model_name} failed: {e}")
+                        continue
                 
-                診断された基本タイプ: {base_data['title']} ({res_type})
-                
-                出力は以下のJSONフォーマットのみで行ってください:
-                {{
-                    "skills": ["今伸ばすべきスキル1", "スキル2", "スキル3"],
-                    "jobs": ["おすすめのインターン業界1", "職種2", "職種3"],
-                    "desc": "学生の強みと、それを活かせる具体的なキャリアパスを簡潔に（50文字以内）"
-                }}
-                """
-                try:
-                    chat_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history])
-                    full_prompt = analysis_prompt + "\n\n【会話履歴】\n" + chat_text
-                    
-                    response = model.generate_content(full_prompt)
-                    text = response.text.strip()
-                    if text.startswith("```json"): text = text[7:]
-                    if text.endswith("```"): text = text[:-3]
-                    
-                    st.session_state.dynamic_result = json.loads(text)
-                except Exception as e:
+                if not success:
                     st.session_state.dynamic_result = {
                         "skills": ["コミュニケーション力", "自己分析", "情報収集力"],
                         "jobs": ["総合職", "営業", "企画"],
@@ -567,6 +598,7 @@ def main():
                 <div class="tarot-card-inner">
                     <div class="result-sub" style="font-size: 1.2em; letter-spacing: 0.2em;">{base_data['sub']}</div>
                     <div class="result-title" style="font-size: 2.5em; margin: 15px 0;">{base_data['title']}</div>
+                    <div class="result-simple-text">{base_data['simple_text']}</div>
                     <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" class="result-image" style="width:100%; max-width:300px; border-radius:10px;">
                     <div class="result-desc" style="font-size: 1.3em; font-style: italic;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
                 </div>
