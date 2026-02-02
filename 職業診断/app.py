@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
 # Gemini 3.0系を優先し、だめなら2.5 Flashへ切り替えます (1.5系は削除)
-MODELS_TO_TRY = ["gemini-3.0-pro", "gemini-3.0-flash", "gemini-2.5-flash"]
+MODELS_TO_TRY = ["gemini-3.0-flash", "gemini-2.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -764,3 +764,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
