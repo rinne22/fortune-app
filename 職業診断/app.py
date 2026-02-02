@@ -8,7 +8,7 @@ import json
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデルの指定 ---
-# ユーザー指定により "gemini-2.5-flash" のみに固定
+# ⚠️ 確実に動く "gemini-1.5-flash" に戻します
 MODELS_TO_TRY = ["gemini-1.5-flash"]
 
 # --- ページ設定 ---
@@ -388,7 +388,7 @@ def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     
-    # ここでは MODELS_TO_TRY に含まれる "gemini-2.5-flash" のみを試行
+    # MODELS_TO_TRY に含まれるモデルのみを試行 (今回は1.5-flashのみ)
     for model_name in MODELS_TO_TRY:
         try:
             model = genai.GenerativeModel(model_name)
@@ -553,7 +553,7 @@ def main():
             with st.spinner("精霊たちが会話の記憶から、あなたの真の能力を紡ぎ出しています..."):
                 genai.configure(api_key=api_key)
                 
-                # 2.5-flashのみで試行
+                # 1.5-flashのみで試行
                 success = False
                 for model_name in MODELS_TO_TRY:
                     try:
@@ -762,6 +762,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
