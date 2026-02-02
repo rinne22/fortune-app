@@ -8,8 +8,8 @@ import json
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
-# 2.0-flashがダメなら1.5-flash、それもダメなら1.5-proに自動で切り替わります
-MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+# Gemini 3.0系を優先し、だめなら2.5 Flashへ切り替えます (1.5系は削除)
+MODELS_TO_TRY = ["gemini-3.0-pro", "gemini-3.0-flash", "gemini-2.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -21,8 +21,6 @@ st.set_page_config(
 
 # --- 定数・アセット定義 ---
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
-URL_FRAME_GOLD = 'https://www.transparenttextures.com/patterns/always-grey.png'
-URL_AGED_PAPER = 'https://www.transparenttextures.com/patterns/aged-paper.png'
 
 # 質問データ (学生向け)
 QUESTIONS = [
@@ -62,8 +60,12 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
-# --- HTML生成関数 ---
-def create_result_html(base_data, dynamic_data, final_advice, img_base64):
+# --- HTML生成関数（先輩機能付き） ---
+def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_base64):
+    # senpai_dataが空の場合のフォールバック
+    if not senpai_data:
+        senpai_data = {"name": "名無しの先輩", "job": "謎の職業", "message": "道は自分で切り拓くものだ。"}
+
     html = f"""
     <!DOCTYPE html>
     <html lang="ja">
@@ -140,6 +142,35 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 line-height: 2.0;
                 font-size: 1.1em;
             }}
+            .senpai-box {{
+                background: rgba(240, 248, 255, 0.95);
+                color: #1a0f2e;
+                border-radius: 15px;
+                padding: 25px;
+                margin-top: 30px;
+                text-align: left;
+                border-left: 10px solid #4682B4;
+            }}
+            .senpai-header {{
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 10px;
+            }}
+            .senpai-icon {{
+                font-size: 2em;
+                margin-right: 15px;
+            }}
+            .senpai-info {{
+                font-size: 0.9em;
+                color: #555;
+            }}
+            .senpai-name {{
+                font-weight: bold;
+                font-size: 1.2em;
+                color: #000;
+            }}
             ul {{ padding-left: 20px; }}
             li {{ margin-bottom: 10px; }}
         </style>
@@ -174,6 +205,19 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
                 <div class="advice-text">
                     {final_advice.replace('\n', '<br>')}
+                </div>
+            </div>
+
+            <div class="senpai-box">
+                <div class="senpai-header">
+                    <div class="senpai-icon">🎓</div>
+                    <div>
+                        <div class="senpai-name">{senpai_data['name']} 先輩</div>
+                        <div class="senpai-info">現職: {senpai_data['job']}</div>
+                    </div>
+                </div>
+                <div style="line-height: 1.8; font-weight: 500;">
+                    「{senpai_data['message']}」
                 </div>
             </div>
             
@@ -372,6 +416,7 @@ def main():
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     if "final_advice" not in st.session_state: st.session_state.final_advice = ""
     if "dynamic_result" not in st.session_state: st.session_state.dynamic_result = None
+    if "senpai_data" not in st.session_state: st.session_state.senpai_data = None
 
     api_key = get_api_key()
     
@@ -618,6 +663,7 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
+        # --- 賢者からの助言 ---
         if not st.session_state.final_advice:
             prompt = f"""
             ユーザーの診断結果: {base_data['title']}
@@ -637,11 +683,72 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
+        # --- 先輩からのアドバイス 生成ロジック ---
+        if not st.session_state.senpai_data:
+            with st.spinner("同じ星を持つ先輩の声を呼び出しています..."):
+                for model_name in MODELS_TO_TRY:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        # 先輩生成用プロンプト
+                        senpai_prompt = f"""
+                        設定: あなたはかつて「{base_data['title']}」タイプと診断された社会人の先輩です。
+                        現在、以下の職業のいずれか、あるいは関連する職種で働いています: {','.join(dynamic_data['jobs'])}
+                        
+                        後輩であるこの学生に向けて、仕事のリアルや、学生時代にやってよかったことなど、
+                        占い師ではなく「生身の人間」として、現実的かつ少しフランクなアドバイスをください。
+
+                        出力フォーマット (JSONのみ):
+                        {{
+                            "name": "架空の先輩の名前 (例: 〇〇 〇〇)",
+                            "job": "具体的な現在の職業 (例: 大手メーカーの広報)",
+                            "message": "アドバイス内容 (100文字程度。〜だよ、〜だと思うよ、等の口調)"
+                        }}
+                        """
+                        response = model.generate_content(senpai_prompt)
+                        text = response.text.strip()
+                        if text.startswith("```json"): text = text[7:]
+                        if text.endswith("```"): text = text[:-3]
+                        st.session_state.senpai_data = json.loads(text)
+                        break
+                    except Exception as e:
+                        print(f"Senpai Generation Failed: {e}")
+                        continue
+                
+                # 全部失敗した場合のデフォルト
+                if not st.session_state.senpai_data:
+                    st.session_state.senpai_data = {
+                        "name": "未来の先輩", "job": "プロフェッショナル", "message": "君なら大丈夫。自分の直感を信じて進めば、必ず道は開けるよ。"
+                    }
+
+        # --- 先輩アドバイスの表示UI ---
+        st.markdown(f"""
+        <div style="
+            background: rgba(240, 248, 255, 0.95); 
+            color: #1a0f2e; 
+            border-radius: 15px; 
+            padding: 20px; 
+            margin-top: 20px; 
+            border-left: 8px solid #4682B4;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        ">
+            <div style="display: flex; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+                <div style="font-size: 2em; margin-right: 15px;">🎓</div>
+                <div>
+                    <div style="font-weight: bold; font-size: 1.1em;">{st.session_state.senpai_data['name']} 先輩</div>
+                    <div style="font-size: 0.9em; color: #555;">現職: {st.session_state.senpai_data['job']}</div>
+                </div>
+            </div>
+            <div style="font-style: italic; line-height: 1.6; font-weight: 600;">
+                「{st.session_state.senpai_data['message']}」
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
         # --- HTMLダウンロードボタン ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
+            html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, st.session_state.senpai_data, user_icon if user_icon else "")
             st.download_button(
                 label="📄 結果をHTMLファイルで保存",
                 data=html_data,
