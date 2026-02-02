@@ -7,9 +7,9 @@ import plotly.graph_objects as go
 import json
 import streamlit.components.v1 as components
 
-# --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
-# Gemini 3.0系を優先し、だめなら2.5 Flashへ切り替えます (1.5系は削除)
-MODELS_TO_TRY = ["gemini-3.0-flash", "gemini-2.5-flash"]
+# --- 設定: 使用するモデルの指定 ---
+# ユーザー指定により "gemini-2.5-flash" のみに固定
+MODELS_TO_TRY = ["gemini-2.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -39,6 +39,7 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
+    # Streamlit CloudのSecretsを優先
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
     else:
@@ -60,9 +61,8 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
-# --- HTML生成関数（先輩機能付き） ---
+# --- HTML生成関数 ---
 def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_base64):
-    # senpai_dataが空の場合のフォールバック
     if not senpai_data:
         senpai_data = {"name": "名無しの先輩", "job": "謎の職業", "message": "道は自分で切り拓くものだ。"}
 
@@ -383,12 +383,12 @@ def calculate_type():
     res_type = first_attr if (first_score - second_score >= 2) else "-".join(sorted([first_attr, second_attr]))
     return res_type, first_attr
 
-# --- AI応答関数（API制限対策・自動切り替え機能付き） ---
+# --- AI応答関数 ---
 def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     
-    # 複数のモデルを順番に試すループ
+    # ここでは MODELS_TO_TRY に含まれる "gemini-2.5-flash" のみを試行
     for model_name in MODELS_TO_TRY:
         try:
             model = genai.GenerativeModel(model_name)
@@ -399,15 +399,13 @@ def get_gemini_response(prompt, api_key):
             
             chat = model.start_chat(history=formatted_history)
             response = chat.send_message(prompt)
-            return response.text # 成功したらここで終了
+            return response.text 
             
         except Exception as e:
-            # エラーが出たら次のモデルへ
             print(f"Model {model_name} failed: {e}")
             continue
     
-    # 全てのモデルがダメだった場合
-    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中）。時間を置いて再度お試しください。"
+    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中、またはモデル指定エラー）。"
 
 # --- メイン処理 ---
 def main():
@@ -540,7 +538,7 @@ def main():
         
         res_type, _ = calculate_type()
         
-        # タイプ情報に「わかりやすい説明 (simple_text)」を追加
+        # タイプ情報
         type_info = {
             "fire": {"title": "開拓の騎士", "sub": "THE LEADER", "simple_text": "行動力と情熱でチームを引っ張るリーダータイプ", "file": "icon_fire.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Leader"},
             "water": {"title": "叡智の賢者", "sub": "THE ENGINEER", "simple_text": "論理的思考で問題を解決する分析・開発タイプ", "file": "icon_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Wizard"},
@@ -555,7 +553,7 @@ def main():
             with st.spinner("精霊たちが会話の記憶から、あなたの真の能力を紡ぎ出しています..."):
                 genai.configure(api_key=api_key)
                 
-                # ここもモデル切り替え対応版のロジックを使用
+                # 2.5-flashのみで試行
                 success = False
                 for model_name in MODELS_TO_TRY:
                     try:
@@ -588,7 +586,7 @@ def main():
                         
                         st.session_state.dynamic_result = json.loads(text)
                         success = True
-                        break # 成功したらループを抜ける
+                        break 
                     except Exception as e:
                         print(f"Analysis Model {model_name} failed: {e}")
                         continue
@@ -714,7 +712,7 @@ def main():
                         print(f"Senpai Generation Failed: {e}")
                         continue
                 
-                # 全部失敗した場合のデフォルト
+                # 失敗した場合のデフォルト
                 if not st.session_state.senpai_data:
                     st.session_state.senpai_data = {
                         "name": "未来の先輩", "job": "プロフェッショナル", "message": "君なら大丈夫。自分の直感を信じて進めば、必ず道は開けるよ。"
@@ -764,4 +762,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
