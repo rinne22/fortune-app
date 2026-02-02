@@ -7,8 +7,8 @@ import plotly.graph_objects as go
 import json
 import streamlit.components.v1 as components
 
-# --- 設定: 使用するモデルの指定 ---
-# ⚠️ 確実に動く "gemini-1.5-flash" に戻します
+# --- 設定: 使用するモデル ---
+# ⚠️ 最も安定して動作するモデルを指定
 MODELS_TO_TRY = ["gemini-1.5-flash"]
 
 # --- ページ設定 ---
@@ -388,7 +388,6 @@ def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     
-    # MODELS_TO_TRY に含まれるモデルのみを試行 (今回は1.5-flashのみ)
     for model_name in MODELS_TO_TRY:
         try:
             model = genai.GenerativeModel(model_name)
@@ -402,10 +401,11 @@ def get_gemini_response(prompt, api_key):
             return response.text 
             
         except Exception as e:
+            # エラーの詳細をサーバーログに残す
             print(f"Model {model_name} failed: {e}")
             continue
     
-    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中、またはモデル指定エラー）。"
+    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中、またはAPI設定エラー）。"
 
 # --- メイン処理 ---
 def main():
@@ -762,4 +762,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
