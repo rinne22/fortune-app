@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデル ---
 # ⚠️ 安定稼働のため、確実に動作する "gemini-1.5-flash" を指定
-MODELS_TO_TRY = ["gemini-1.5-flash"]
+MODELS_TO_TRY = ["gemini-2.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -761,5 +761,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
