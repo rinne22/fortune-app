@@ -8,8 +8,8 @@ import json
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデル ---
-# ⚠️ 安定稼働のため、確実に動作する "gemini-1.5-flash" を指定
-MODELS_TO_TRY = ["gemini-2.5-flash"]
+# ⚠️ 安定稼働のため "gemini-1.5-flash" を指定
+MODELS_TO_TRY = ["gemini-1.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -39,7 +39,6 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
-    # Streamlit CloudのSecretsを優先して読み込む
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
     else:
@@ -142,9 +141,10 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
                 line-height: 2.0;
                 font-size: 1.1em;
             }}
+            /* 先輩BOXのスタイル（ダウンロード用） */
             .senpai-box {{
                 background: rgba(240, 248, 255, 0.95);
-                color: #1a0f2e;
+                color: #1a0f2e !important; /* 文字色を濃紺に強制 */
                 border-radius: 15px;
                 padding: 25px;
                 margin-top: 30px;
@@ -164,12 +164,12 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
             }}
             .senpai-info {{
                 font-size: 0.9em;
-                color: #555;
+                color: #333 !important;
             }}
             .senpai-name {{
                 font-weight: bold;
                 font-size: 1.2em;
-                color: #000;
+                color: #000 !important;
             }}
             ul {{ padding-left: 20px; }}
             li {{ margin-bottom: 10px; }}
@@ -216,7 +216,7 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
                         <div class="senpai-info">現職: {senpai_data['job']}</div>
                     </div>
                 </div>
-                <div style="line-height: 1.8; font-weight: 500;">
+                <div style="line-height: 1.8; font-weight: 500; color: #1a0f2e !important;">
                     「{senpai_data['message']}」
                 </div>
             </div>
@@ -253,11 +253,13 @@ def apply_custom_css(bg_image_url):
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
         
+        /* 基本の文字色は白系だが、クラス指定で上書きできるようにする */
         h1, h2, h3, h4, p, div, span, label, li {{
-            color: #E0E0E0 !important;
+            color: #E0E0E0; /* !important を外して上書き可能に */
             font-family: 'Shippori Mincho B1', serif;
             letter-spacing: 0.05em;
         }}
+        
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
@@ -265,10 +267,11 @@ def apply_custom_css(bg_image_url):
             font-size: 4rem !important; text-align: center;
             margin-top: 5vh !important;
         }}
-        .intro-text {{
-            font-size: 1.2rem; line-height: 2.0; text-align: center; color: #FFD700; font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
+        
+        /* 先輩ボックス用の強力な文字色指定 */
+        .senpai-content, .senpai-content div, .senpai-content span, .senpai-content p {{
+            color: #1a0f2e !important; /* 濃紺 */
+            text-shadow: none !important; /* 影を消す */
         }}
 
         /* --- ボタンデザイン --- */
@@ -277,7 +280,6 @@ def apply_custom_css(bg_image_url):
         div[data-testid="stDownloadButton"] button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            background-size: 200% 200%;
             color: #000000 !important;
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
@@ -286,10 +288,6 @@ def apply_custom_css(bg_image_url):
             font-size: 1.5rem !important;
             padding: 15px 30px !important;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
-            text-shadow: none !important;
-            margin-top: 20px !important;
-            transition: all 0.3s ease !important;
-            animation: shine 3s infinite alternate;
         }}
         
         div[data-testid="stFormSubmitButton"] button:hover, 
@@ -300,10 +298,6 @@ def apply_custom_css(bg_image_url):
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
             color: #000000 !important;
         }}
-        
-        div[data-testid="stDownloadButton"] button * {{
-            color: #000000 !important;
-        }}
 
         /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
@@ -312,37 +306,21 @@ def apply_custom_css(bg_image_url):
             padding: 20px !important; 
             border-radius: 15px !important; 
             margin-bottom: 15px !important; 
-            cursor: pointer; 
-            transition: 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-        }}
-        div[role="radiogroup"] label:hover {{
-            border-color: #FFD700 !important;
-            background-color: rgba(50, 50, 50, 1.0) !important;
-            transform: translateX(5px);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }}
         div[role="radiogroup"] label p {{
             font-size: 1.3rem !important; 
             font-weight: bold !important; 
             color: #FFFFFF !important;
-            text-shadow: 1px 1px 2px #000;
         }}
 
-        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
-        [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFFFFF !important;
             border: 2px solid #FFD700 !important;
-            border-radius: 20px !important;
         }}
         .stChatMessage {{
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
-            border-radius: 15px !important;
-            padding: 10px !important;
-            margin-bottom: 10px !important;
         }}
         
         .tarot-card-outer {{
@@ -354,7 +332,7 @@ def apply_custom_css(bg_image_url):
             background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center;
         }}
         .result-simple-text {{
-            color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
+            color: #FFD700 !important; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
             background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block;
         }}
         .advice-box {{
@@ -433,7 +411,7 @@ def main():
         st.markdown("""
         <div style="text-align: center;">
             <h1 class="main-title">FORTUNE CAREER</h1>
-            <p style='letter-spacing: 0.1em; color: #FFD700; font-size: 1.5em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>〜 学生のためのAI職業診断 〜</p>
+            <p style='letter-spacing: 0.1em; color: #FFD700 !important; font-size: 1.5em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>〜 学生のためのAI職業診断 〜</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -457,14 +435,14 @@ def main():
         with col_main2:
             st.markdown("""
             <div style="text-align: center; margin-bottom: 30px;">
-                <p style="margin-top: 20px; font-style: italic; font-size: 1.5em; color: #FFD700; font-weight: 900; text-shadow: 2px 2px 0px #000;">
+                <p style="margin-top: 20px; font-style: italic; font-size: 1.5em; color: #FFD700 !important; font-weight: 900; text-shadow: 2px 2px 0px #000;">
                     「そなたの価値観について、10の問いに答えよ…」
                 </p>
             </div>
             """, unsafe_allow_html=True)
             with st.form("questions_form"):
                 for q_data in QUESTIONS:
-                    st.markdown(f"<h3 style='color:#FFD700; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h3 style='color:#FFD700 !important; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
                     choice = st.radio("選択肢", list(q_data['options'].keys()), key=q_data['id'], label_visibility="collapsed", index=None)
                     if choice: st.session_state.answers[q_data['id']] = choice
                     st.markdown("<hr style='border-color: rgba(255,215,0,0.3); margin: 30px 0;'>", unsafe_allow_html=True)
@@ -648,15 +626,15 @@ def main():
             """, unsafe_allow_html=True)
 
         with col_res2:
-            st.markdown("<h3 style='text-align: center; color: #FFD700; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center; color: #FFD700 !important; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
             st.markdown(f"""
             <div style="background: rgba(15, 15, 25, 0.9); padding: 25px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); margin-top: 10px;">
                 <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">🗝️ 今伸ばすべきスキル:</p>
-                <p style="font-size: 1.1em; margin-bottom: 20px;">{' / '.join(dynamic_data['skills'])}</p>
+                <p style="font-size: 1.1em; margin-bottom: 20px; color: #fff;">{' / '.join(dynamic_data['skills'])}</p>
                 <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">💼 おすすめインターン・適職:</p>
-                <p style="font-size: 1.3em; font-weight: bold;">{' / '.join(dynamic_data['jobs'])}</p>
+                <p style="font-size: 1.3em; font-weight: bold; color: #fff;">{' / '.join(dynamic_data['jobs'])}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -717,11 +695,10 @@ def main():
                         "name": "未来の先輩", "job": "プロフェッショナル", "message": "君なら大丈夫。自分の直感を信じて進めば、必ず道は開けるよ。"
                     }
 
-        # --- 先輩アドバイスの表示UI ---
+        # --- 先輩アドバイスの表示UI (文字色修正済み) ---
         st.markdown(f"""
-        <div style="
+        <div class="senpai-content" style="
             background: rgba(240, 248, 255, 0.95); 
-            color: #1a0f2e; 
             border-radius: 15px; 
             padding: 20px; 
             margin-top: 20px; 
@@ -732,7 +709,7 @@ def main():
                 <div style="font-size: 2em; margin-right: 15px;">🎓</div>
                 <div>
                     <div style="font-weight: bold; font-size: 1.1em;">{st.session_state.senpai_data['name']} 先輩</div>
-                    <div style="font-size: 0.9em; color: #555;">現職: {st.session_state.senpai_data['job']}</div>
+                    <div style="font-size: 0.9em;">現職: {st.session_state.senpai_data['job']}</div>
                 </div>
             </div>
             <div style="font-style: italic; line-height: 1.6; font-weight: 600;">
@@ -761,6 +738,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
