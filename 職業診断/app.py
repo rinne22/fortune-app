@@ -8,8 +8,8 @@ import json
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデル ---
-# ⚠️ 最も安定して動作するモデルを指定
-MODELS_TO_TRY = ["gemini-3-flash"]
+# ⚠️ 安定稼働のため、確実に動作する "gemini-1.5-flash" を指定
+MODELS_TO_TRY = ["gemini-1.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -39,7 +39,7 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
-    # Streamlit CloudのSecretsを優先
+    # Streamlit CloudのSecretsを優先して読み込む
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
     else:
@@ -401,7 +401,6 @@ def get_gemini_response(prompt, api_key):
             return response.text 
             
         except Exception as e:
-            # エラーの詳細をサーバーログに残す
             print(f"Model {model_name} failed: {e}")
             continue
     
@@ -762,4 +761,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
