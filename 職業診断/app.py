@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデル ---
 # ⚠️ 安定稼働のため "gemini-1.5-flash" を指定
-MODELS_TO_TRY = ["gemini-1.5-flash"]
+MODELS_TO_TRY = ["gemini-2.5-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -144,7 +144,7 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
             /* 先輩BOXのスタイル（ダウンロード用） */
             .senpai-box {{
                 background: rgba(240, 248, 255, 0.95);
-                color: #1a0f2e !important; /* 文字色を濃紺に強制 */
+                color: #1a0f2e !important; 
                 border-radius: 15px;
                 padding: 25px;
                 margin-top: 30px;
@@ -253,9 +253,8 @@ def apply_custom_css(bg_image_url):
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
         
-        /* 基本の文字色は白系だが、クラス指定で上書きできるようにする */
         h1, h2, h3, h4, p, div, span, label, li {{
-            color: #E0E0E0; /* !important を外して上書き可能に */
+            color: #E0E0E0;
             font-family: 'Shippori Mincho B1', serif;
             letter-spacing: 0.05em;
         }}
@@ -268,10 +267,10 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* 先輩ボックス用の強力な文字色指定 */
+        /* 先輩ボックス用の文字色指定 */
         .senpai-content, .senpai-content div, .senpai-content span, .senpai-content p {{
-            color: #1a0f2e !important; /* 濃紺 */
-            text-shadow: none !important; /* 影を消す */
+            color: #1a0f2e !important;
+            text-shadow: none !important;
         }}
 
         /* --- ボタンデザイン --- */
@@ -299,7 +298,6 @@ def apply_custom_css(bg_image_url):
             color: #000000 !important;
         }}
 
-        /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -718,7 +716,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        # --- HTMLダウンロードボタン ---
+        # --- HTMLダウンロードボタン (注釈文を金色に修正) ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
@@ -729,7 +727,8 @@ def main():
                 file_name="fortune_result.html",
                 mime="text/html"
             )
-            st.caption("※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。")
+            # ここを修正：通常の st.caption ではなく、金色のHTMLテキストとして表示
+            st.markdown('<p style="color: #FFD700; text-align: center; font-size: 0.9em; margin-top: 5px;">※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。</p>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 最初に戻る"):
@@ -738,7 +737,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
