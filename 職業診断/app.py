@@ -5,6 +5,7 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
+import streamlit.components.v1 as components
 
 # ==========================================
 # 🔧 設定エリア
@@ -13,7 +14,10 @@ import json
 TEST_MODE = False 
 
 # 使用するモデルの優先順位 (API制限対策)
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+
+# 会話の往復回数制限（ここを変えれば回数調整可能）
+MAX_TURN_COUNT = 3
 
 # ==========================================
 
@@ -47,7 +51,7 @@ def get_api_key():
     # secretsにキーがあればそれを使う
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
-    # なければサイドバーで入力させる（救済措置）
+    # なければサイドバーで入力させる
     with st.sidebar:
         st.warning("⚠️ APIキーが設定されていません")
         val = st.text_input("Gemini APIキーを入力", type="password")
@@ -294,8 +298,6 @@ def main():
     if "final_advice" not in st.session_state: st.session_state.final_advice = ""
 
     api_key = get_api_key()
-    
-    # 画像読み込み
     bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
     bg_room_base64 = get_base64_of_bin_file("room.jpg")
     
@@ -360,26 +362,46 @@ def main():
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
+            # プロンプト強化：職業適性重視 + 具体性重視
             system_prompt = f"""
-            あなたは「運命の館」の主であり、学生専門のキャリア占い師です。属性「{main_attr}」に基づき対話してください。
-            【対話ルール】
-            1. 語尾は「〜じゃ」「そなた」等の神秘的な口調を貫くこと。
-            2. 質問内容は、専門用語を使わず、学生が日常の言葉で答えやすいようにすること（例：ガクチカ→学生時代に一番頑張ったこと）。
-            3. 「部活、バイト、勉強などで夢中になったエピソード」を2回ほど深掘りし、最後に「運命の準備が整いました」と伝えて。
+            あなたは「運命の館」の主であり、裏の顔は【学生専門の凄腕キャリアコンサルタント】です。
+            ユーザーの診断属性「{main_attr}」に基づき、職業適性をガチで分析するためのヒアリングを行ってください。
+            
+            【厳守ルール】
+            1. キャラ作り：語尾は「〜じゃ」「そなた」等の占い師口調を崩さない。
+            2. ヒアリング内容：
+               - 「なんとなく」の話は許さず、「具体的にいつ？誰と？どんな成果が出た？」と突っ込んで聞くこと。
+               - 学生が答えやすいように、「例えば部活の大会で〜」「アルバイトの接客で〜」と具体的なシーンを例示して問いかけること。
+            3. 目的：最終的にこの学生に最適な「具体的な職種（例：Webマーケター、法人営業）」を提案するための材料を集めること。
             """
             st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(system_prompt, api_key)})
 
         col_c1, col_c2, col_c3 = st.columns([1, 3, 1])
         with col_c2:
+            # ユーザーの発言回数をカウント
+            user_msg_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
+
             for msg in st.session_state.chat_history:
                 with st.chat_message(msg["role"], avatar="🔮" if msg["role"] == "assistant" else "🧑‍🎓"): st.write(msg["content"])
             
-            if prompt := st.chat_input("ここに回答を入力してください..."):
-                st.session_state.chat_history.append({"role": "user", "content": prompt})
-                st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(f"会話履歴: {st.session_state.chat_history}\n占い師口調を維持しつつ、さらに深く聞き出して。十分なら締めて。", api_key)})
-                st.rerun()
+            # 制限回数未満なら入力欄を表示
+            if user_msg_count < MAX_TURN_COUNT:
+                if prompt := st.chat_input("ここに回答を入力してください..."):
+                    st.session_state.chat_history.append({"role": "user", "content": prompt})
+                    
+                    # 次のAIの返答を作成
+                    next_prompt = f"会話履歴: {st.session_state.chat_history}\n占い師口調で、さらに具体的に職業適性を探る質問をして。"
+                    # 最後のターンなら締めくくる
+                    if user_msg_count + 1 >= MAX_TURN_COUNT:
+                        next_prompt = f"会話履歴: {st.session_state.chat_history}\nこれまでの情報を踏まえ、占い師口調で「ふむ、そなたの真の力が完全に見えたぞ...」と締めくくり、結果を見るように促して。"
+                    
+                    st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
+                    st.rerun()
+            else:
+                st.success("星々の導きが出揃いました。運命の書を開くときです。")
             
             st.markdown("<br>", unsafe_allow_html=True)
+            # 制限回数に達しているか、ユーザーが押せば結果へ
             if st.button("📜 運命の書を開く"): st.session_state.step = 3; st.rerun()
 
     # STEP 3: 結果表示
@@ -400,9 +422,9 @@ def main():
         
         if not st.session_state.dynamic_result:
             with st.spinner("能力を紡ぎ出しています..."):
-                analysis = get_gemini_response(f"会話履歴 {st.session_state.chat_history} から強みを分析しJSONで出力せよ: {{'skills':[], 'jobs':[], 'desc':''}}", api_key)
+                analysis = get_gemini_response(f"会話履歴 {st.session_state.chat_history} から強みを分析しJSONで出力せよ: {{'skills':['スキル1','スキル2','スキル3'], 'jobs':['職種1','職種2','職種3'], 'desc':'一言キャッチコピー'}}", api_key)
                 try: st.session_state.dynamic_result = json.loads(analysis[analysis.find('{'):analysis.rfind('}')+1].replace("'", '"'))
-                except: st.session_state.dynamic_result = {"skills":["努力"], "jobs":["総合職"], "desc":"大いなる可能性"}
+                except: st.session_state.dynamic_result = {"skills":["コミュニケーション力", "継続力", "分析力"], "jobs":["総合職", "営業", "企画"], "desc":"あなたの可能性は無限大です"}
                 st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ300文字程度の分かりやすく熱いアドバイスを送れ。", api_key)
 
         user_icon = get_base64_of_bin_file(base_data['file'])
@@ -471,4 +493,5 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
+
 
