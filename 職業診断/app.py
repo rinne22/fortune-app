@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 TEST_MODE = False 
 
 # 使用するモデルの優先順位 (API制限対策)
-MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
 
 # 会話の往復回数制限（ここを変えれば回数調整可能）
 MAX_TURN_COUNT = 3
@@ -493,5 +493,6 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
+
 
 
