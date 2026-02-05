@@ -5,6 +5,7 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
+import streamlit.components.v1 as components
 
 # ==========================================
 # 🔧 設定エリア
@@ -13,7 +14,7 @@ import json
 TEST_MODE = False 
 
 # 使用するモデルの優先順位 (API制限対策)
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 
 # ==========================================
 
@@ -28,7 +29,7 @@ st.set_page_config(
 # 背景画像（デフォルト）
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
 
-# 質問データ (構文エラー修正済み)
+# 質問データ (修正済み：q7, q8の記述ミスを解消)
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -51,6 +52,7 @@ def get_base64_of_bin_file(bin_file):
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(base_dir, bin_file)
+        if not os.path.exists(file_path): return None
         with open(file_path, 'rb') as f: return base64.b64encode(f.read()).decode()
     except: return None
 
@@ -60,10 +62,18 @@ def apply_custom_css(bg_image_url):
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         .stApp {{ background-image: {bg_image_url} !important; background-size: cover; background-attachment: fixed; }}
         .stApp::before {{ content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: -1; }}
+        
         h1, h2, h3, p, div, span, label, li {{ color: #E0E0E0 !important; font-family: 'Shippori Mincho B1', serif; }}
+        
         .main-title {{ font-family: 'Cinzel', serif !important; color: #FFD700 !important; font-size: 4rem !important; text-align: center; margin-top: 5vh !important; text-shadow: 0 0 10px #FFD700; }}
-        [data-testid="stBottom"] {{ background-color: transparent !important; }}
+        
+        /* 下部の白い余白を透明化 */
+        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
+        
+        /* チャット入力欄のデザイン */
         .stChatInput textarea {{ background-color: rgba(0, 0, 0, 0.8) !important; color: #FFD700 !important; border: 2px solid #FFD700 !important; border-radius: 20px !important; }}
+        
+        /* チャット吹き出しのデザイン */
         div[data-testid="stChatMessage"] {{ background-color: rgba(20, 10, 40, 0.9) !important; border: 1px solid #FFD700 !important; border-radius: 15px !important; }}
     </style>
     """, unsafe_allow_html=True)
@@ -88,6 +98,33 @@ def calculate_type():
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     res_type = sorted_scores[0][0] if (sorted_scores[0][1] - sorted_scores[1][1] >= 2) else "-".join(sorted([sorted_scores[0][0], sorted_scores[1][0]]))
     return res_type, sorted_scores[0][0]
+
+def create_result_html(base_data, dynamic_data, final_advice, img_base64):
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>運命の鑑定書</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            body {{ background-color: #050510; color: #E0E0E0; font-family: 'Shippori Mincho B1', serif; text-align: center; padding: 40px; }}
+            .container {{ max-width: 800px; margin: 0 auto; background-color: #1a0f2e; border: 4px double #FFD700; border-radius: 20px; padding: 40px; }}
+            h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; text-shadow: 0 0 10px #FFD700; }}
+            .advice-text {{ line-height: 2.0; font-size: 1.1em; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>{base_data['title']}</h1>
+            <img src="data:image/jpeg;base64,{img_base64}" style="width:250px; border-radius:50%; border:3px solid #FFD700; margin: 20px 0;">
+            <p style="font-size:1.5em; font-weight:bold;">“{dynamic_data.get('desc','運命は開かれた')}”</p>
+            <div class="advice-text">{final_advice.replace('\n', '<br>')}</div>
+        </div>
+    </body>
+    </html>
+    """
+    return html
 
 def main():
     if "step" not in st.session_state: st.session_state.step = 0
@@ -121,7 +158,7 @@ def main():
                 if None in st.session_state.answers.values(): st.error("まだ答えられていない予言があります。")
                 else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット（占い師風・平易な表現）
+    # STEP 2: チャット
     elif st.session_state.step == 2:
         st.markdown("<h1 style='text-align:center;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
@@ -155,8 +192,8 @@ def main():
             with st.spinner("能力を紡ぎ出しています..."):
                 analysis = get_gemini_response(f"会話履歴 {st.session_state.chat_history} から強みを分析しJSONで出力せよ: {{'skills':[], 'jobs':[], 'desc':''}}", api_key)
                 try: st.session_state.dynamic_result = json.loads(analysis[analysis.find('{'):analysis.rfind('}')+1].replace("'", '"'))
-                except: st.session_state.dynamic_result = {"skills":["努力"], "jobs":["総合職"], "desc":"大いなる可能性"}
-                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ分かりやすく熱いアドバイスを送れ。", api_key)
+                except: st.session_state.dynamic_result = {"skills":["努力"], "jobs":["総合職"], "desc":"可能性あり"}
+                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ300文字程度の分かりやすく熱いアドバイスを送れ。", api_key)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -167,6 +204,8 @@ def main():
             st.markdown(f"**💼 適職:** {' / '.join(st.session_state.dynamic_result['jobs'])}")
             st.write(st.session_state.final_advice)
         
+        html = create_result_html(base_data, st.session_state.dynamic_result, st.session_state.final_advice, user_icon if user_icon else "")
+        st.download_button("📄 鑑定書を保存", data=html, file_name="result.html", mime="text/html")
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
