@@ -15,7 +15,7 @@ MAX_TURN_COUNT = 3
 
 # ==========================================
 
-# --- ページ設定 (必ず一番最初に書く) ---
+# --- ページ設定 ---
 st.set_page_config(
     page_title="FORTUNE CAREER",
     page_icon="🔮",
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL（ローカル画像がない場合の保険）
+# 背景画像のWeb URL
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
@@ -52,13 +52,11 @@ def get_api_key():
 
 def get_base64_of_bin_file(bin_file):
     try:
-        # カレントディレクトリ
         if os.path.exists(bin_file):
             with open(bin_file, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data).decode()
         
-        # スクリプトのあるディレクトリ
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, bin_file)
         if os.path.exists(file_path):
@@ -74,11 +72,11 @@ def apply_custom_css(bg_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 全体のフォント設定（ベースサイズアップ） */
+        /* 全体のフォント設定（ちょうどいいサイズ感に調整） */
         html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
             color: #E0E0E0 !important;
-            font-size: 1.1rem !important; /* 全体的に少し大きく */
+            font-size: 1.05rem !important; /* 標準サイズ */
         }}
 
         /* 背景画像設定 */
@@ -101,39 +99,38 @@ def apply_custom_css(bg_url):
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
             text-shadow: 0 0 10px #FFD700, 0 0 20px #000;
-            font-size: 4.5rem !important; /* さらに巨大化 */
+            font-size: 3.5rem !important; /* 4.5 -> 3.5 */
             text-align: center;
             margin-top: 20px !important;
         }}
 
-        /* 導入文ボックス（文字サイズ大幅アップ） */
+        /* 導入文ボックス */
         .intro-box {{
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid #FFD700;
             border-radius: 15px;
-            padding: 40px;
+            padding: 30px;
             text-align: center;
-            font-size: 1.5rem !important; /* 1.2 -> 1.5rem */
-            line-height: 2.2;
+            font-size: 1.2rem; /* 1.5 -> 1.2 */
+            line-height: 2;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            font-weight: bold;
         }}
 
         /* 質問文のスタイル（h3タグ） */
         h3 {{
-            font-size: 2.0rem !important; /* 質問文を大きく */
+            font-size: 1.6rem !important; /* 2.0 -> 1.6 */
             color: #FFD700 !important;
             text-shadow: 2px 2px 4px #000;
-            margin-bottom: 20px !important;
+            margin-bottom: 15px !important;
         }}
 
-        /* ラジオボタン（選択肢）のデザイン強化 */
+        /* ラジオボタン（選択肢） */
         div[role="radiogroup"] label {{
             background-color: rgba(20, 20, 40, 0.9) !important;
             border: 1px solid #FFD700 !important;
-            border-radius: 15px !important;
-            padding: 20px 25px !important; /* パディング増量 */
-            margin-bottom: 15px !important;
+            border-radius: 10px !important;
+            padding: 15px 20px !important;
+            margin-bottom: 10px !important;
             color: white !important;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 6px rgba(0,0,0,0.5);
@@ -145,30 +142,28 @@ def apply_custom_css(bg_url):
         }}
         /* 選択肢の文字サイズ */
         div[role="radiogroup"] label p {{
-            font-size: 1.6rem !important; /* 1.3 -> 1.6rem */
+            font-size: 1.25rem !important; /* 1.6 -> 1.25 */
             font-weight: bold !important; 
             color: #FFFFFF !important;
         }}
 
-        /* チャット入力欄 */
         [data-testid="stBottom"] {{ background: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFD700 !important;
             border: 2px solid #FFD700 !important;
             border-radius: 25px !important;
-            font-size: 1.2rem !important;
+            font-size: 1.1rem !important;
         }}
 
-        /* チャットメッセージ */
         div[data-testid="stChatMessage"] {{
             background-color: rgba(20, 10, 30, 0.9) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
         }}
         div[data-testid="stChatMessage"] p {{
-            font-size: 1.3rem !important; /* チャット文字も大きく */
-            line-height: 1.8;
+            font-size: 1.1rem !important; /* チャット文字サイズ */
+            line-height: 1.6;
         }}
 
         /* ボタン共通 */
@@ -178,10 +173,10 @@ def apply_custom_css(bg_url):
             color: black !important;
             font-weight: bold !important;
             border: none !important;
-            padding: 15px !important;
+            padding: 12px !important;
             border-radius: 30px !important;
             font-family: 'Cinzel', serif !important;
-            font-size: 1.5rem !important; /* ボタン文字も大きく */
+            font-size: 1.3rem !important; /* ボタン文字サイズ */
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
         }}
         .stButton button:hover {{
@@ -189,7 +184,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
         }}
         
-        /* 結果カード */
         .card-frame {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -199,18 +193,18 @@ def apply_custom_css(bg_url):
         }}
         .card-content {{
             background: #1a0f2e;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
             text-align: center;
         }}
         .advice-box {{
             background: rgba(255, 248, 220, 0.95); 
-            border: 4px double #8B4513;
-            border-radius: 15px; 
-            padding: 30px; 
+            border: 3px double #8B4513;
+            border-radius: 10px; 
+            padding: 25px; 
             margin-top: 30px;
             color: #3E2723 !important;
-            font-size: 1.3rem !important;
+            font-size: 1.1rem !important;
         }}
         .advice-box * {{ color: #3E2723 !important; }}
     </style>
@@ -296,7 +290,7 @@ def main():
     # --- STEP 0: トップ ---
     if st.session_state.step == 0:
         st.markdown('<div class="main-title">FORTUNE CAREER</div>', unsafe_allow_html=True)
-        st.markdown('<div style="text-align:center; margin-bottom:40px; font-size:1.5rem;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
+        st.markdown('<div style="text-align:center; margin-bottom:40px;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -317,13 +311,13 @@ def main():
     # --- STEP 1: 質問 ---
     elif st.session_state.step == 1:
         st.markdown('<div class="main-title">The 10 Prophecies</div>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align:center; color:#DDD; font-size:1.2rem;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align:center; color:#DDD;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
             with st.form("quiz"):
                 for q_data in QUESTIONS:
-                    st.markdown(f"### {q_data['q']}")
+                    st.markdown(f"<h3 style='color:#FFD700; text-shadow:1px 1px 2px #000;'>{q_data['q']}</h3>", unsafe_allow_html=True)
                     st.radio("選択肢", list(q_data['options'].keys()), key=f"ans_{q_data['id']}", index=None, label_visibility="collapsed")
                 
                 if st.form_submit_button("🔮 真実を明らかにする"):
@@ -372,7 +366,7 @@ def main():
             if user_count < MAX_TURN_COUNT:
                 if val := st.chat_input("回答を入力..."):
                     st.session_state.chat_history.append({"role": "user", "content": val})
-                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n追加で一つだけ深掘り質問をして。" if user_count+1 < MAX_TURN_COUNT else "十分な情報が集まりました。占い師として締めくくって。"
+                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n追加で一つだけ深掘り質問をして。" if user_count+1 < MAX_TURN_COUNT else "十分な情報が集まりました。占い師として「運命の結果が出た」と締めくくって。"
                     st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
                     st.rerun()
             else:
@@ -384,12 +378,18 @@ def main():
         st.balloons()
         st.markdown('<div class="main-title">Your Destiny Card</div>', unsafe_allow_html=True)
         r_type, _ = calculate_type()
-        cards = {"fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"}, "water": {"title": "叡智の賢者", "file": "icon_water.jpg"}, "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"},
-                 "fire-water": {"title": "蒼炎の軍師", "file": "icon_fire_water.jpg"}, "fire-wind": {"title": "陽光の詩人", "file": "icon_fire_wind.jpg"}, "water-wind": {"title": "星詠みの司書", "file": "icon_water_wind.jpg"}}
+        cards = {
+            "fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"},
+            "water": {"title": "叡智の賢者", "file": "icon_water.jpg"},
+            "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"},
+            "fire-water": {"title": "蒼炎の軍師", "file": "icon_fire_water.jpg"},
+            "fire-wind": {"title": "陽光の詩人", "file": "icon_fire_wind.jpg"},
+            "water-wind": {"title": "星詠みの司書", "file": "icon_water_wind.jpg"}
+        }
         card_data = cards.get(r_type, cards["fire"])
 
         if not st.session_state.dynamic_result:
-            with st.spinner("運命を紡いでいます..."):
+            with st.spinner("分析中..."):
                 prompt = f"会話履歴:{st.session_state.chat_history} から強み分析JSONを出力: {{'skills':[], 'jobs':[], 'desc':''}}"
                 try:
                     res = get_gemini_response(prompt, api_key)
@@ -407,9 +407,9 @@ def main():
             st.markdown(f"""
             <div class="card-frame">
                 <div class="card-content">
-                    <h2 style="color:#FFD700; font-size:2.5rem;">{card_data['title']}</h2>
+                    <h2 style="color:#FFD700;">{card_data['title']}</h2>
                     <img src="{src}" style="width:100%; border-radius:10px; margin:10px 0;">
-                    <p style="color:#FFF; font-weight:bold; font-size:1.3rem;">“{d_res['desc']}”</p>
+                    <p style="color:#FFF; font-weight:bold;">“{d_res['desc']}”</p>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -435,7 +435,7 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
             
             st.markdown(f"""
-            <div style="background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; border:1px solid #FFD700; font-size:1.3rem;">
+            <div style="background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; border:1px solid #FFD700; font-size:1.1rem;">
                 <p><b>🗝️ スキル:</b> {' / '.join(d_res['skills'])}</p>
                 <p><b>💼 適職:</b> {' / '.join(d_res['jobs'])}</p>
             </div>
