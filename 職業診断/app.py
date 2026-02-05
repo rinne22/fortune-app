@@ -140,21 +140,40 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* --- 入力欄のデザイン（ここを劇的改善！） --- */
+        /* --- チャット入力欄の劇的改善（白い帯を消す！） --- */
+        
+        /* 下部の固定コンテナ自体を透明にする */
+        [data-testid="stBottom"] {{
+            background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }}
+        [data-testid="stBottom"] > div {{
+            background-color: transparent !important;
+        }}
+
+        /* 入力欄（テキストエリア）のデザイン */
         .stChatInput textarea {{
-            background-color: rgba(0, 0, 0, 0.7) !important; /* 背景を黒く半透明に */
-            color: #FFD700 !important; /* 入力文字を金色に */
-            border: 2px solid #FFD700 !important; /* 金色の枠線 */
-            border-radius: 30px !important; /* 丸みを強く */
-            caret-color: #FFD700 !important; /* カーソルも金色に */
+            background-color: rgba(0, 0, 0, 0.85) !important; /* 黒の半透明 */
+            color: #FFD700 !important; /* 文字は金 */
+            border: 2px solid #FFD700 !important; /* 枠は金 */
+            border-radius: 30px !important; /* 丸くする */
+            caret-color: #FFD700 !important;
             font-family: 'Shippori Mincho B1', serif !important;
         }}
-        .stChatInput textarea::placeholder {{
-            color: rgba(255, 215, 0, 0.5) !important; /* プレースホルダーは薄い金 */
+        /* フォーカス時の光る演出 */
+        .stChatInput textarea:focus {{
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6) !important;
+            border-color: #FFF !important;
         }}
-        /* 送信ボタンの色調整 */
+        
+        /* 送信ボタンアイコン */
         button[data-testid="stChatInputSubmitButton"] {{
             color: #FFD700 !important;
+        }}
+        button[data-testid="stChatInputSubmitButton"]:hover {{
+            color: #FFFFFF !important;
         }}
 
         /* --- チャット吹き出し --- */
@@ -208,7 +227,6 @@ def apply_custom_css(bg_image_url):
         div[role="radiogroup"] label:hover {{ border-color: #FFD700 !important; background-color: rgba(50, 50, 50, 1.0) !important; }}
         div[role="radiogroup"] label p {{ font-size: 1.3rem !important; font-weight: bold !important; color: #FFFFFF !important; }}
 
-        [data-testid="stBottom"] {{ background-color: transparent !important; }}
         .intro-text {{ font-size: 1.5rem !important; text-align: center; color: #FFD700; font-weight: bold; background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 2px solid #FFD700; }}
         
         .tarot-card-outer {{ padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7); border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); margin: 0 auto; max-width: 600px; }}
