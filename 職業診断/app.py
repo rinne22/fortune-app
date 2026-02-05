@@ -5,11 +5,11 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
+import re # 正規表現用（JSONのゴミ取り）
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
-# 2.0-flashがダメなら1.5-flash、それもダメなら1.5-proに自動で切り替わります
-MODELS_TO_TRY = ["gemini-2.5-flash",]
+MODELS_TO_TRY = ["gemini-2.5-flash","gemini-2.0-flash"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -19,8 +19,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 定数・アセット定義 ---
+# --- 定数・アセット定義（画像がない場合の保険） ---
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
+# もしローカル画像がなくても、このネット上の画像を表示してエラーを防ぐ
 
 # 質問データ (学生向け)
 QUESTIONS = [
@@ -39,16 +40,21 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
-    if "GEMINI_API_KEY" in st.secrets:
-        return st.secrets["GEMINI_API_KEY"]
-    else:
-        with st.sidebar:
-            st.warning("⚠️ APIキーが設定されていません")
-            val = st.text_input("Gemini APIキーを入力", type="password")
-            if val: return val
+    # 万が一APIキー取得でエラーが出てもアプリを止めない
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            return st.secrets["GEMINI_API_KEY"]
+        else:
+            with st.sidebar:
+                st.warning("⚠️ APIキーが設定されていません")
+                val = st.text_input("Gemini APIキーを入力", type="password")
+                if val: return val
+            return None
+    except Exception:
         return None
 
 def get_base64_of_bin_file(bin_file):
+    # ファイル読み込みエラー対策
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(base_dir, bin_file)
@@ -60,127 +66,131 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
-# --- HTML生成関数 (デザイン修正版) ---
+# --- HTML生成関数 ---
 def create_result_html(base_data, dynamic_data, final_advice, img_base64):
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <title>運命の鑑定書 - {base_data['title']}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
-        <style>
-            body {{
-                background-color: #050510;
-                color: #E0E0E0;
-                font-family: 'Shippori Mincho B1', serif;
-                text-align: center;
-                padding: 40px;
-            }}
-            .container {{
-                max-width: 800px;
-                margin: 0 auto;
-                background-image: url('https://www.transparenttextures.com/patterns/always-grey.png');
-                background-color: #1a0f2e;
-                border: 4px double #FFD700;
-                border-radius: 20px;
-                padding: 40px;
-                box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
-            }}
-            h1 {{
-                font-family: 'Cinzel', serif;
-                color: #FFD700;
-                font-size: 3em;
-                margin-bottom: 5px;
-                text-shadow: 0 0 10px #FFD700;
-            }}
-            .sub-title {{
-                color: #AAAAAA;
-                letter-spacing: 0.2em;
-                margin-bottom: 20px;
-            }}
-            .catchphrase {{
-                color: #FFD700;
-                font-weight: bold;
-                font-size: 1.2em;
-                margin-bottom: 20px;
-                background: rgba(255, 215, 0, 0.1);
-                display: inline-block;
-                padding: 5px 15px;
-                border-radius: 20px;
-            }}
-            .main-img {{
-                width: 300px;
-                height: 300px;
-                object-fit: cover;
-                border-radius: 50%;
-                border: 3px solid #FFD700;
-                margin: 10px auto;
-                display: block;
-                box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            }}
-            .section-box {{
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 10px;
-                padding: 20px;
-                margin: 30px 0;
-                text-align: left;
-            }}
-            .section-title {{
-                color: #FFD700;
-                font-weight: bold;
-                font-size: 1.2em;
-                border-bottom: 1px solid #FFD700;
-                padding-bottom: 5px;
-                margin-bottom: 15px;
-            }}
-            .advice-text {{
-                line-height: 2.0;
-                font-size: 1.1em;
-            }}
-            ul {{ padding-left: 20px; }}
-            li {{ margin-bottom: 10px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>{base_data['title']}</h1>
-            <div class="sub-title">{base_data['sub']}</div>
-            <div class="catchphrase">{base_data['simple_text']}</div>
-            
-            <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
-            
-            <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">
-                “{dynamic_data.get('desc', '運命は開かれた')}”
-            </div>
-
-            <div class="section-box">
-                <div class="section-title">🗝️ 今伸ばすべきスキル</div>
-                <ul>
-                    {''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}
-                </ul>
-            </div>
-
-            <div class="section-box">
-                <div class="section-title">💼 おすすめインターン・適職</div>
-                <ul>
-                    {''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}
-                </ul>
-            </div>
-
-            <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;">
-                <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
-                <div class="advice-text">
-                    {final_advice.replace('\n', '<br>')}
+    # HTML生成中のエラー対策
+    try:
+        html = f"""
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+            <meta charset="UTF-8">
+            <title>運命の鑑定書 - {base_data['title']}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
+            <style>
+                body {{
+                    background-color: #050510;
+                    color: #E0E0E0;
+                    font-family: 'Shippori Mincho B1', serif;
+                    text-align: center;
+                    padding: 40px;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background-image: url('https://www.transparenttextures.com/patterns/always-grey.png');
+                    background-color: #1a0f2e;
+                    border: 4px double #FFD700;
+                    border-radius: 20px;
+                    padding: 40px;
+                    box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+                }}
+                h1 {{
+                    font-family: 'Cinzel', serif;
+                    color: #FFD700;
+                    font-size: 3em;
+                    margin-bottom: 5px;
+                    text-shadow: 0 0 10px #FFD700;
+                }}
+                .sub-title {{
+                    color: #AAAAAA;
+                    letter-spacing: 0.2em;
+                    margin-bottom: 20px;
+                }}
+                .catchphrase {{
+                    color: #FFD700;
+                    font-weight: bold;
+                    font-size: 1.2em;
+                    margin-bottom: 20px;
+                    background: rgba(255, 215, 0, 0.1);
+                    display: inline-block;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                }}
+                .main-img {{
+                    width: 300px;
+                    height: 300px;
+                    object-fit: cover;
+                    border-radius: 50%;
+                    border: 3px solid #FFD700;
+                    margin: 10px auto;
+                    display: block;
+                    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+                }}
+                .section-box {{
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin: 30px 0;
+                    text-align: left;
+                }}
+                .section-title {{
+                    color: #FFD700;
+                    font-weight: bold;
+                    font-size: 1.2em;
+                    border-bottom: 1px solid #FFD700;
+                    padding-bottom: 5px;
+                    margin-bottom: 15px;
+                }}
+                .advice-text {{
+                    line-height: 2.0;
+                    font-size: 1.1em;
+                }}
+                ul {{ padding-left: 20px; }}
+                li {{ margin-bottom: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>{base_data['title']}</h1>
+                <div class="sub-title">{base_data['sub']}</div>
+                <div class="catchphrase">{base_data['simple_text']}</div>
+                
+                <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
+                
+                <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">
+                    “{dynamic_data.get('desc', '運命は開かれた')}”
                 </div>
+
+                <div class="section-box">
+                    <div class="section-title">🗝️ 今伸ばすべきスキル</div>
+                    <ul>
+                        {''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}
+                    </ul>
+                </div>
+
+                <div class="section-box">
+                    <div class="section-title">💼 おすすめインターン・適職</div>
+                    <ul>
+                        {''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}
+                    </ul>
+                </div>
+
+                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;">
+                    <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
+                    <div class="advice-text">
+                        {final_advice.replace('\n', '<br>')}
+                    </div>
+                </div>
+                
+                <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
             </div>
-            
-            <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
-        </div>
-    </body>
-    </html>
-    """
-    return html
+        </body>
+        </html>
+        """
+        return html
+    except Exception:
+        return "<html><body><h1>Error Creating Card</h1></body></html>"
 
 def apply_custom_css(bg_image_url):
     st.markdown(f"""
@@ -220,22 +230,22 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* --- ここが重要：文字の視認性向上 --- */
+        /* 文字の視認性向上設定 */
         .intro-text {{
-            font-size: 1.5rem !important; /* 文字を大きく */
+            font-size: 1.5rem !important;
             line-height: 2.2; 
             text-align: center; 
             color: #FFD700; 
             font-weight: bold;
             text-shadow: 2px 2px 4px #000;
-            background: rgba(0, 0, 0, 0.85); /* 背景を濃くして文字を読ませる */
+            background: rgba(0, 0, 0, 0.85);
             padding: 30px; 
             border-radius: 15px;
-            border: 2px solid #FFD700; /* 金色の枠線 */
+            border: 2px solid #FFD700;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
-        /* --- ボタンデザイン --- */
+        /* ボタンデザイン */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
@@ -269,7 +279,6 @@ def apply_custom_css(bg_image_url):
             color: #000000 !important;
         }}
 
-        /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -347,7 +356,7 @@ def calculate_type():
     res_type = first_attr if (first_score - second_score >= 2) else "-".join(sorted([first_attr, second_attr]))
     return res_type, first_attr
 
-# --- AI応答関数（API制限対策・自動切り替え機能付き） ---
+# --- AI応答関数（API制限対策・自動切り替え・エラーハンドリング強化） ---
 def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
@@ -362,12 +371,16 @@ def get_gemini_response(prompt, api_key):
             
             chat = model.start_chat(history=formatted_history)
             response = chat.send_message(prompt)
+            # 空のレスポンスチェック
+            if not response.text:
+                raise ValueError("Empty response")
             return response.text 
             
         except Exception as e:
             print(f"Model {model_name} failed: {e}")
             continue
     
+    # 最終フォールバックメッセージ（これが表示されればアプリは止まらない）
     return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中）。時間を置いて再度お試しください。"
 
 # --- メイン処理 ---
@@ -380,12 +393,16 @@ def main():
 
     api_key = get_api_key()
     
+    # 画像ファイルがローカルになくてもエラーにならないようチェック
     bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
     bg_room_base64 = get_base64_of_bin_file("room.jpg")
     
+    # 画像がない場合はネット上の画像をデフォルトにする
     bg_css_url = f"url('{URL_BG_DEFAULT}')"
-    if st.session_state.step == 0 and bg_mansion_base64:
-        bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
+    
+    if st.session_state.step == 0:
+        if bg_mansion_base64:
+            bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
     elif bg_room_base64:
         bg_css_url = f"url('data:image/jpeg;base64,{bg_room_base64}')"
     
@@ -541,16 +558,21 @@ def main():
                         
                         response = model.generate_content(full_prompt)
                         text = response.text.strip()
+                        
+                        # JSONクリーニング（バッククォート削除）
                         if text.startswith("```json"): text = text[7:]
                         if text.endswith("```"): text = text[:-3]
-                        
+                        text = text.strip()
+
+                        # JSON解析トライ
                         st.session_state.dynamic_result = json.loads(text)
                         success = True
-                        break
+                        break 
                     except Exception as e:
                         print(f"Analysis Model {model_name} failed: {e}")
                         continue
                 
+                # 全モデル失敗時、またはJSON解析エラー時のフォールバックデータ
                 if not success:
                     st.session_state.dynamic_result = {
                         "skills": ["コミュニケーション力", "自己分析", "情報収集力"],
@@ -560,6 +582,7 @@ def main():
         
         dynamic_data = st.session_state.dynamic_result
         
+        # アイコン画像（なければネット上の代替画像などは使わず、空文字にしてデフォルト表示へ）
         user_icon = get_base64_of_bin_file(base_data['file'])
         final_img_src = base_data['file'] if user_icon else ""
 
@@ -660,4 +683,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
