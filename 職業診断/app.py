@@ -5,7 +5,6 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import streamlit.components.v1 as components
 
 # ==========================================
 # 🔧 設定エリア
@@ -29,7 +28,7 @@ st.set_page_config(
 # 背景画像（デフォルト）
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
 
-# 質問データ (修正完了)
+# 質問データ
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -45,8 +44,15 @@ QUESTIONS = [
 
 # --- ヘルパー関数 ---
 def get_api_key():
-    try: return st.secrets.get("GEMINI_API_KEY")
-    except: return None
+    # secretsにキーがあればそれを使う
+    if "GEMINI_API_KEY" in st.secrets:
+        return st.secrets["GEMINI_API_KEY"]
+    # なければサイドバーで入力させる（救済措置）
+    with st.sidebar:
+        st.warning("⚠️ APIキーが設定されていません")
+        val = st.text_input("Gemini APIキーを入力", type="password")
+        if val: return val
+    return None
 
 def get_base64_of_bin_file(bin_file):
     try:
@@ -68,6 +74,7 @@ def apply_custom_css(bg_image_url):
             background-color: #050510; 
             background-image: {bg_image_url} !important;
             background-size: cover !important;
+            background-repeat: no-repeat !important;
             background-attachment: fixed !important;
             background-position: center center !important;
         }}
@@ -89,7 +96,7 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
 
-        /* --- 導入文のデザイン（復活） --- */
+        /* 導入文 */
         .intro-text {{
             font-size: 1.5rem !important;
             line-height: 2.2; 
@@ -104,7 +111,7 @@ def apply_custom_css(bg_image_url):
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
-        /* --- 選択肢のデザイン（枠囲み復活） --- */
+        /* 選択肢（金枠） */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -125,7 +132,7 @@ def apply_custom_css(bg_image_url):
             color: #FFFFFF !important;
         }}
 
-        /* --- チャットUI --- */
+        /* チャットUI（透明化 & 入力欄） */
         [data-testid="stBottom"] {{
             background-color: transparent !important;
             background: transparent !important;
@@ -159,7 +166,7 @@ def apply_custom_css(bg_image_url):
         }}
         div[data-testid="stChatMessage"] .stAvatar {{ background-color: #FFD700 !important; color: #000 !important; }}
 
-        /* ボタンデザイン */
+        /* ボタン */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
@@ -176,7 +183,7 @@ def apply_custom_css(bg_image_url):
         }}
         div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
 
-        /* --- タロットカード風デザイン（結果画面） --- */
+        /* タロットカード */
         .tarot-card-outer {{
             padding: 5px; 
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -203,6 +210,8 @@ def apply_custom_css(bg_image_url):
             border-radius: 15px; 
             display: inline-block;
         }}
+        .result-desc {{ font-size: 1.3em; font-style: italic; margin-top: 15px; color: #FFFFFF; }}
+        
         .advice-box {{
             background: rgba(255, 248, 220, 0.9); 
             border: 3px double #8B4513;
@@ -243,18 +252,20 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
         <html lang="ja">
         <head>
             <meta charset="UTF-8">
-            <title>運命の鑑定書</title>
+            <title>運命の鑑定書 - {base_data['title']}</title>
             <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
                 body {{ background-color: #050510; color: #E0E0E0; font-family: 'Shippori Mincho B1', serif; text-align: center; padding: 40px; }}
                 .container {{ max-width: 800px; margin: 0 auto; background-color: #1a0f2e; border: 4px double #FFD700; border-radius: 20px; padding: 40px; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }}
-                h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; text-shadow: 0 0 10px #FFD700; }}
+                h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; margin-bottom: 5px; text-shadow: 0 0 10px #FFD700; }}
                 .sub-title {{ color: #AAAAAA; letter-spacing: 0.2em; margin-bottom: 20px; }}
                 .catchphrase {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 20px; background: rgba(255, 215, 0, 0.1); display: inline-block; padding: 5px 15px; border-radius: 20px; }}
+                .main-img {{ width: 300px; height: 300px; object-fit: cover; border-radius: 50%; border: 3px solid #FFD700; margin: 10px auto; display: block; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }}
                 .section-box {{ background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 20px; margin: 30px 0; text-align: left; }}
                 .section-title {{ color: #FFD700; font-weight: bold; font-size: 1.2em; border-bottom: 1px solid #FFD700; padding-bottom: 5px; margin-bottom: 15px; }}
-                .advice-text {{ line-height: 2.0; font-size: 1.1em; text-align: left; }}
+                .advice-text {{ line-height: 2.0; font-size: 1.1em; }}
                 ul {{ padding-left: 20px; }}
+                li {{ margin-bottom: 10px; }}
             </style>
         </head>
         <body>
@@ -262,17 +273,12 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 <h1>{base_data['title']}</h1>
                 <div class="sub-title">{base_data['sub']}</div>
                 <div class="catchphrase">{base_data['simple_text']}</div>
-                <img src="data:image/jpeg;base64,{img_base64}" style="width:250px; border-radius:50%; border:3px solid #FFD700; margin: 20px 0;">
-                <p style="font-size:1.5em; font-weight:bold;">“{dynamic_data.get('desc','運命は開かれた')}”</p>
-                
+                <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
+                <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
                 <div class="section-box"><div class="section-title">🗝️ 今伸ばすべきスキル</div><ul>{''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}</ul></div>
                 <div class="section-box"><div class="section-title">💼 おすすめインターン・適職</div><ul>{''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}</ul></div>
-                
-                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;">
-                    <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
-                    <div class="advice-text">{final_advice.replace('\n', '<br>')}</div>
-                </div>
-                <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER</p>
+                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;"><div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div><div class="advice-text">{final_advice.replace('\n', '<br>')}</div></div>
+                <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
             </div>
         </body>
         </html>
@@ -288,11 +294,25 @@ def main():
     if "final_advice" not in st.session_state: st.session_state.final_advice = ""
 
     api_key = get_api_key()
-    bg_mansion = get_base64_of_bin_file("mansion.jpg")
-    bg_css = f"url('data:image/jpeg;base64,{bg_mansion}')" if bg_mansion else f"url('{URL_BG_DEFAULT}')"
-    apply_custom_css(bg_css)
+    
+    # 画像読み込み
+    bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
+    bg_room_base64 = get_base64_of_bin_file("room.jpg")
+    
+    # 背景切り替え
+    bg_css_url = f"url('{URL_BG_DEFAULT}')"
+    if st.session_state.step in [0, 1]:
+        if bg_mansion_base64:
+            bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
+    elif st.session_state.step in [2, 3]:
+        if bg_room_base64:
+            bg_css_url = f"url('data:image/jpeg;base64,{bg_room_base64}')"
+        elif bg_mansion_base64:
+            bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
 
-    # STEP 0: トップ（導入文あり）
+    apply_custom_css(bg_css_url)
+
+    # STEP 0: トップ
     if st.session_state.step == 0:
         st.markdown('<h1 class="main-title">FORTUNE CAREER</h1>', unsafe_allow_html=True)
         st.markdown('<div style="text-align:center; font-size:1.5rem; margin-bottom:2rem; color:#FFD700; text-shadow:1px 1px 2px black;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
@@ -310,19 +330,17 @@ def main():
                 if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
                 else: st.session_state.step = 1; st.rerun()
 
-    # STEP 1: クイズ（枠あり・初期選択なし・変数名修正済み）
+    # STEP 1: クイズ
     elif st.session_state.step == 1:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>The 10 Prophecies</h1>", unsafe_allow_html=True)
         col_m1, col_m2, col_m3 = st.columns([1, 3, 1])
         with col_m2:
             st.markdown("<p style='text-align:center; font-style:italic; font-size:1.5em; color:#FFD700; font-weight:900;'>「そなたの価値観について、10の問いに答えよ…」</p>", unsafe_allow_html=True)
             with st.form("questions_form"):
-                for q_data in QUESTIONS:
-                    st.markdown(f"<h3 style='color:#FFD700; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
-                    # 初期値なし(index=None)
-                    st.radio("選択肢", list(q_data['options'].keys()), key=q_data['id'], label_visibility="collapsed", index=None)
+                for q in QUESTIONS:
+                    st.markdown(f"<h3 style='color:#FFD700; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q['q']}</h3>", unsafe_allow_html=True)
+                    st.radio("選択肢", list(q['options'].keys()), key=q['id'], label_visibility="collapsed", index=None)
                 if st.form_submit_button("🔮 真実を明らかにする"):
-                    # 全ての回答が埋まっているかチェック
                     all_answered = True
                     temp_answers = {}
                     for q in QUESTIONS:
@@ -364,7 +382,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("📜 運命の書を開く"): st.session_state.step = 3; st.rerun()
 
-    # STEP 3: 結果表示（レーダーチャート・カードデザイン）
+    # STEP 3: 結果表示
     elif st.session_state.step == 3:
         st.balloons()
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>✨ Your Destiny Card ✨</h1>", unsafe_allow_html=True)
@@ -399,7 +417,7 @@ def main():
             raw_scores["fire"], raw_scores["water"], raw_scores["wind"],
             (raw_scores["fire"]+raw_scores["wind"])/1.2, (raw_scores["fire"]+raw_scores["water"])/1.2
         ]
-        vals += [vals[0]] # 閉じる
+        vals += [vals[0]]
         categories = ['実行力', '論理力', '共感力', '創造性', '戦略性', '実行力']
 
         fig = go.Figure()
@@ -409,7 +427,7 @@ def main():
             mode='lines+markers', marker=dict(size=10, color='#FFD700', symbol='diamond')
         ))
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(15, 15, 25, 0.9)',
             polar=dict(
                 radialaxis=dict(visible=True, range=[0, 10], tickfont=dict(color='white', size=12, weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2, layer='below traces'),
                 angularaxis=dict(tickfont=dict(color='#FFD700', size=15, family='Shippori Mincho B1', weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2),
@@ -432,6 +450,7 @@ def main():
             </div>
             """, unsafe_allow_html=True)
         with col2:
+            st.markdown("<h3 style='text-align: center; color: #FFD700; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True)
             st.markdown(f"""
             <div style="background:rgba(15, 15, 25, 0.9); padding:20px; border-radius:10px; border:1px solid #FFD700;">
@@ -452,4 +471,3 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
