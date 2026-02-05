@@ -10,7 +10,7 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
@@ -23,10 +23,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL（ローカル画像がない場合の保険）
-# 外観
+# 背景画像URL
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
-# 部屋の中（少し暗めの神秘的な部屋）
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
 # 質問データ
@@ -43,84 +41,61 @@ QUESTIONS = [
     {"id": "q10", "q": "X. 伝説の終わり - 卒業時、周りからどう言われたい？", "options": {"🔥 「あいつは凄かった、伝説だ」": "fire", "💧 「あいつがいれば何でも解決した」": "water", "🌿 「あいつがいてくれて本当に楽しかった」": "wind"}},
 ]
 
-# --- ヘルパー関数 ---
 def get_api_key():
-    if "GEMINI_API_KEY" in st.secrets:
-        return st.secrets["GEMINI_API_KEY"]
+    if "GEMINI_API_KEY" in st.secrets: return st.secrets["GEMINI_API_KEY"]
     with st.sidebar:
-        st.warning("⚠️ APIキー未設定")
         return st.text_input("Gemini API Key", type="password")
 
-def get_base64_from_file(filename):
-    # カレントディレクトリと、app.pyのあるディレクトリの両方を探す
-    possible_paths = [
-        filename,
-        os.path.join(os.path.dirname(__file__), filename)
-    ]
-    for path in possible_paths:
-        if os.path.exists(path):
-            try:
-                with open(path, "rb") as f:
-                    return base64.b64encode(f.read()).decode()
-            except:
-                pass
+def get_base64_of_bin_file(bin_file):
+    try:
+        if os.path.exists(bin_file): with open(bin_file, 'rb') as f: return base64.b64encode(f.read()).decode()
+    except: return None
     return None
 
-def apply_background(step):
-    # 画像ファイル読み込みトライ
-    b64_mansion = get_base64_from_file("mansion.jpg")
-    b64_room = get_base64_from_file("room.jpg")
-
-    # STEP 0 (トップ) だけ外観。それ以外 (STEP 1:質問 〜 STEP 3:結果) は部屋の中
-    if step == 0:
-        if b64_mansion:
-            img_url = f"data:image/jpeg;base64,{b64_mansion}"
-        else:
-            img_url = URL_BG_MANSION
-    else:
-        # STEP 1, 2, 3 は部屋
-        if b64_room:
-            img_url = f"data:image/jpeg;base64,{b64_room}"
-        else:
-            img_url = URL_BG_ROOM
-
+# --- 強制CSS適用 ---
+def apply_custom_css(bg_url):
     st.markdown(f"""
-    <style>
-    .stApp {{
-        background-image: url('{img_url}') !important;
-        background-size: cover !important;
-        background-position: center center !important;
-        background-repeat: no-repeat !important;
-        background-attachment: fixed !important;
-    }}
-    .stApp::before {{
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.6);
-        z-index: -1;
-    }}
-    </style>
-    """, unsafe_allow_html=True)
-
-def apply_ui_styles():
-    st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        h1, h2, h3, p, div, span, label, li, button {{
+        /* 全体のフォント設定 */
+        html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
-            color: #E0E0E0 !important;
+            color: #E0E0E0;
         }}
+
+        /* 背景画像 (stAppViewContainerに適用して確実に反映させる) */
+        [data-testid="stAppViewContainer"] {{
+            background-image: {bg_url} !important;
+            background-size: cover !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            background-attachment: fixed !important;
+        }}
+        
+        /* 背景の黒オーバーレイ */
+        [data-testid="stAppViewContainer"]::before {{
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+            pointer-events: none;
+        }}
+
+        /* ヘッダー隠し */
+        [data-testid="stHeader"] {{ visibility: hidden; }}
+
+        /* タイトル装飾 */
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #000;
             font-size: 3.5rem !important;
             text-align: center;
-            margin-top: 30px !important;
+            margin-top: 20px !important;
         }}
-        
+
         /* 導入文ボックス */
         .intro-box {{
             background: rgba(0, 0, 0, 0.85);
@@ -130,121 +105,145 @@ def apply_ui_styles():
             text-align: center;
             font-size: 1.2rem;
             line-height: 2;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }}
 
-        /* 選択肢（ラジオボタン） */
-        div[role="radiogroup"] > label {{
-            background-color: rgba(0, 0, 0, 0.85) !important;
+        /* ラジオボタン（選択肢）のデザイン強化 */
+        /* Streamlitの構造に合わせて確実にヒットさせる */
+        div[role="radiogroup"] {{
+            background: transparent !important;
+        }}
+        div[role="radiogroup"] label {{
+            background-color: rgba(20, 20, 40, 0.9) !important;
             border: 1px solid #FFD700 !important;
             border-radius: 10px !important;
-            padding: 15px !important;
+            padding: 15px 20px !important;
             margin-bottom: 10px !important;
-            transition: all 0.3s;
+            color: white !important;
+            transition: all 0.2s ease-in-out;
         }}
-        div[role="radiogroup"] > label:hover {{
-            background-color: rgba(50, 50, 50, 0.9) !important;
+        div[role="radiogroup"] label:hover {{
+            background-color: rgba(60, 60, 80, 1.0) !important;
+            transform: translateX(5px);
             box-shadow: 0 0 10px #FFD700;
         }}
-
-        /* チャット吹き出し */
-        .stChatMessage {{
-            background-color: rgba(20, 10, 30, 0.9) !important;
-            border: 1px solid rgba(255, 215, 0, 0.4) !important;
-            border-radius: 15px !important;
+        /* 選択された時の強調 */
+        div[role="radiogroup"] label[data-checked="true"] {{
+            background-color: rgba(100, 80, 0, 0.9) !important;
+            box-shadow: 0 0 15px #FFD700 !important;
         }}
-        
-        /* 入力欄 & 下部余白削除 */
+
+        /* チャット入力欄 */
         [data-testid="stBottom"] {{ background: transparent !important; }}
         .stChatInput textarea {{
-            background-color: rgba(0,0,0,0.8) !important;
-            border: 2px solid #FFD700 !important;
+            background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFD700 !important;
-            border-radius: 20px !important;
+            border: 2px solid #FFD700 !important;
+            border-radius: 25px !important;
         }}
 
-        /* ボタン */
+        /* チャットメッセージ */
+        [data-testid="stChatMessage"] {{
+            background-color: rgba(20, 10, 30, 0.9) !important;
+            border: 1px solid rgba(255, 215, 0, 0.3) !important;
+            border-radius: 15px !important;
+        }}
+
+        /* ボタン共通 */
         .stButton button {{
+            width: 100%;
             background: linear-gradient(45deg, #FFD700, #DAA520) !important;
             color: black !important;
-            border: none !important;
             font-weight: bold !important;
+            border: none !important;
+            padding: 12px !important;
+            border-radius: 30px !important;
             font-family: 'Cinzel', serif !important;
-            padding: 10px 30px !important;
-            border-radius: 50px !important;
-            transition: transform 0.2s;
+            font-size: 1.2rem !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
         }}
         .stButton button:hover {{
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #FFD700;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
         }}
         
         /* 結果カード */
-        .card-container {{
+        .card-frame {{
+            padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
-            padding: 3px;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(255,215,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            margin-bottom: 20px;
         }}
-        .card-inner {{
+        .card-content {{
             background: #1a0f2e;
-            padding: 30px;
-            border-radius: 13px;
+            padding: 20px;
+            border-radius: 15px;
             text-align: center;
         }}
     </style>
     """, unsafe_allow_html=True)
 
 def get_gemini_response(prompt, api_key):
-    if TEST_MODE: 
-        time.sleep(1)
-        return "【テスト】そなたの運命、しかと見届けた。"
-    
-    if not api_key: return "⚠️ APIキーを設定してください。"
+    if TEST_MODE: return "【テストモード】運命は動いている..."
+    if not api_key: return "⚠️ APIキーを設定してください"
     genai.configure(api_key=api_key)
-    
     for model_name in MODELS_TO_TRY:
         try:
             model = genai.GenerativeModel(model_name)
-            res = model.generate_content(prompt)
-            if res.text: return res.text
+            response = model.generate_content(prompt)
+            if response.text: return response.text
         except: continue
-    return "申し訳ございません。星々の声が届きにくくなっております。"
+    return "通信エラーが発生しました。"
 
 def calculate_type():
     scores = {"fire": 0, "water": 0, "wind": 0}
     for q_id, val in st.session_state.answers.items():
         for q in QUESTIONS:
-            if q["id"] == q_id:
-                scores[q["options"][val]] += 1
-    
+            if q["id"] == q_id: scores[q["options"][val]] += 1
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    t1, s1 = sorted_scores[0]
-    t2, s2 = sorted_scores[1]
-    if s1 - s2 >= 2: return t1, t1
-    return f"{min(t1,t2)}-{max(t1,t2)}", t1
+    return sorted_scores[0][0], sorted_scores[0][0]
 
-# --- メイン ---
+def create_result_html(base_data, dynamic_data, final_advice, img_base64):
+    try:
+        return f"""
+        <html>
+        <body style="background:#050510; color:#E0E0E0; font-family:serif; text-align:center; padding:20px;">
+            <div style="border:4px double #FFD700; padding:40px; background:#1a0f2e; border-radius:20px;">
+                <h1 style="color:#FFD700; font-family:serif;">{base_data['title']}</h1>
+                <img src="data:image/jpeg;base64,{img_base64}" style="width:200px; border-radius:10px; border:2px solid #FFD700;">
+                <h3 style="color:#FFF;">“{dynamic_data.get('desc','')}”</h3>
+                <div style="text-align:left; background:rgba(255,255,255,0.1); padding:20px; border-radius:10px;">
+                    <p><b>適職:</b> {', '.join(dynamic_data['jobs'])}</p>
+                    <p><b>助言:</b> {final_advice}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+    except: return "<html><body>Error</body></html>"
+
 def main():
     if "step" not in st.session_state: st.session_state.step = 0
     if "answers" not in st.session_state: st.session_state.answers = {}
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
-    if "final_advice" not in st.session_state: st.session_state.final_advice = ""
     if "dynamic_result" not in st.session_state: st.session_state.dynamic_result = None
+    if "final_advice" not in st.session_state: st.session_state.final_advice = ""
 
     api_key = get_api_key()
     
-    # CSS & 背景適用（Stepに応じて切り替え）
-    apply_background(st.session_state.step)
-    apply_ui_styles()
+    # 背景画像の決定（STEP0は外観、STEP1以降は部屋）
+    current_bg = f"url('{URL_BG_MANSION}')"
+    if st.session_state.step > 0:
+        current_bg = f"url('{URL_BG_ROOM}')"
+    
+    apply_custom_css(current_bg)
 
     # --- STEP 0: トップ ---
     if st.session_state.step == 0:
         st.markdown('<div class="main-title">FORTUNE CAREER</div>', unsafe_allow_html=True)
-        st.markdown('<div style="text-align:center; margin-bottom:40px;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1,2,1])
+        st.markdown('<p style="text-align:center; font-size:1.5rem; color:#FFD700; font-weight:bold;">〜 学生のためのAI職業診断 〜</p>', unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.markdown("""
             <div class="intro-box">
@@ -254,196 +253,108 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             if st.button("🚪 運命の扉を開く"):
-                if not api_key and not TEST_MODE:
-                    st.error("左のサイドバーからAPIキーを入力してください")
-                else:
-                    st.session_state.step = 1
-                    st.rerun()
+                if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
+                else: st.session_state.step = 1; st.rerun()
 
-    # --- STEP 1: 質問 (背景: 部屋) ---
+    # --- STEP 1: 質問 ---
     elif st.session_state.step == 1:
         st.markdown('<div class="main-title">The 10 Prophecies</div>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align:center;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align:center; color:#DDD;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns([1,3,1])
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
             with st.form("quiz"):
-                for q in QUESTIONS:
-                    st.markdown(f"### {q['q']}")
-                    # index=None で初期選択なし
-                    st.radio("選択肢", list(q['options'].keys()), key=f"ans_{q['id']}", index=None, label_visibility="collapsed")
+                for q_data in QUESTIONS:
+                    st.markdown(f"<h3 style='color:#FFD700; text-shadow:1px 1px 2px #000;'>{q_data['q']}</h3>", unsafe_allow_html=True)
+                    st.radio("選択肢", list(q_data['options'].keys()), key=f"ans_{q_data['id']}", index=None, label_visibility="collapsed")
                 
                 if st.form_submit_button("🔮 真実を明らかにする"):
-                    # 回答チェック
-                    valid = True
-                    temp_ans = {}
+                    all_ans = True
                     for q in QUESTIONS:
-                        val = st.session_state.get(f"ans_{q['id']}")
-                        if val is None:
-                            valid = False
-                            break
-                        temp_ans[q['id']] = val
+                        if st.session_state.get(f"ans_{q['id']}") is None:
+                            all_ans = False; break
+                        st.session_state.answers[q['id']] = st.session_state[f"ans_{q['id']}"]
                     
-                    if valid:
-                        st.session_state.answers = temp_ans
-                        st.session_state.step = 2
-                        st.rerun()
-                    else:
-                        st.error("まだ答えられていない予言があります。")
+                    if not all_ans: st.error("全ての問いに答えてください。")
+                    else: st.session_state.step = 2; st.rerun()
 
-    # --- STEP 2: チャット (背景: 部屋) ---
+    # --- STEP 2: チャット ---
     elif st.session_state.step == 2:
         st.markdown('<div class="main-title">Talk with Spirits</div>', unsafe_allow_html=True)
-        
         if not st.session_state.chat_history:
-            r_type, main_attr = calculate_type()
-            first_prompt = f"""
-            あなたは「運命の館」の主（占い師）であり、超一流の学生キャリアコンサルタントです。
-            ユーザーの属性は「{main_attr}」です。
-            
-            【役割】
-            占い師の口調（〜じゃ、そなた、〜かのう）で話してください。
-            しかし、質問内容は「ガクチカ」や「自己分析」のための超具体的な深掘りです。
-            専門用語は使わず、「学生時代に一番熱中したこと」を聞き出してください。
-            """
-            st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(first_prompt, api_key)})
+            _, main_attr = calculate_type()
+            prompt = f"あなたは占い師兼キャリアアドバイザーです。属性{main_attr}の学生に対し、ガクチカや強みを深掘りする質問をしてください。口調は占い師で。"
+            st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(prompt, api_key)})
 
-        col1, col2, col3 = st.columns([1,3,1])
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
-            
+            user_msg_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
             for msg in st.session_state.chat_history:
-                icon = "🔮" if msg["role"] == "assistant" else "🧑‍🎓"
-                with st.chat_message(msg["role"], avatar=icon):
-                    st.write(msg["content"])
+                with st.chat_message(msg["role"], avatar="🔮" if msg["role"] == "assistant" else "🧑‍🎓"): st.write(msg["content"])
             
-            # 3ターン制限
-            if user_count < MAX_TURN_COUNT:
-                if user_input := st.chat_input("回答を入力..."):
-                    st.session_state.chat_history.append({"role": "user", "content": user_input})
-                    
-                    # 次の指示
-                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n占い師として、学生の強み（リーダーシップや継続力など）を特定するための鋭い追加質問を1つだけ行ってください。"
-                    if user_count + 1 >= MAX_TURN_COUNT:
-                        next_prompt = "十分な情報が集まりました。占い師として「ふむ、そなたの進むべき道が見えたぞ...」と締めくくってください。"
-                    
-                    ai_reply = get_gemini_response(next_prompt, api_key)
-                    st.session_state.chat_history.append({"role": "assistant", "content": ai_reply})
+            if user_msg_count < MAX_TURN_COUNT:
+                if val := st.chat_input("回答を入力..."):
+                    st.session_state.chat_history.append({"role": "user", "content": val})
+                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n追加で一つだけ深掘り質問をして。" if user_msg_count+1 < MAX_TURN_COUNT else "十分な情報が集まりました。占い師として締めくくって。"
+                    st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
                     st.rerun()
             else:
-                st.success("星々の導きが完了しました。")
-                if st.button("📜 運命の書を開く"):
-                    st.session_state.step = 3
-                    st.rerun()
+                st.success("運命の結果が出ました。")
+                if st.button("📜 運命の書を開く"): st.session_state.step = 3; st.rerun()
 
-    # --- STEP 3: 結果 (背景: 部屋) ---
+    # --- STEP 3: 結果 ---
     elif st.session_state.step == 3:
         st.balloons()
         st.markdown('<div class="main-title">Your Destiny Card</div>', unsafe_allow_html=True)
-        
         r_type, _ = calculate_type()
-        # カード定義
-        cards = {
-            "fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"},
-            "water": {"title": "叡智の賢者", "file": "icon_water.jpg"},
-            "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"},
-            "fire-water": {"title": "蒼炎の軍師", "file": "icon_fire_water.jpg"},
-            "fire-wind": {"title": "陽光の詩人", "file": "icon_fire_wind.jpg"},
-            "water-wind": {"title": "星詠みの司書", "file": "icon_water_wind.jpg"}
-        }
+        cards = {"fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"}, "water": {"title": "叡智の賢者", "file": "icon_water.jpg"}, "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"}}
         card_data = cards.get(r_type, cards["fire"])
-        
-        # 結果生成（まだなければ）
+
         if not st.session_state.dynamic_result:
-            with st.spinner("運命を紡いでいます..."):
-                prompt = f"""
-                これまでの会話:{st.session_state.chat_history}
-                上記から学生の強みと適職を分析し、以下のJSON形式のみで出力してください。
-                {{
-                    "skills": ["スキル1", "スキル2", "スキル3"],
-                    "jobs": ["適職1", "適職2", "適職3"],
-                    "desc": "この学生のキャッチコピー（30文字以内）"
-                }}
-                """
-                res = get_gemini_response(prompt, api_key)
+            with st.spinner("分析中..."):
+                prompt = f"会話履歴:{st.session_state.chat_history} から強み分析JSONを出力: {{'skills':[], 'jobs':[], 'desc':''}}"
                 try:
+                    res = get_gemini_response(prompt, api_key)
                     json_str = res[res.find('{'):res.rfind('}')+1].replace("'", '"')
                     st.session_state.dynamic_result = json.loads(json_str)
-                except:
-                    st.session_state.dynamic_result = {"skills":["分析不能"], "jobs":["全般"], "desc":"未知なる可能性"}
-                
-                adv_prompt = "診断結果に基づき、占い師として学生の背中を押すアドバイスを300文字でください。"
-                st.session_state.final_advice = get_gemini_response(adv_prompt, api_key)
+                except: st.session_state.dynamic_result = {"skills":["分析"], "jobs":["総合職"], "desc":"可能性"}
+                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師としてアドバイスを。", api_key)
 
         d_res = st.session_state.dynamic_result
+        col1, col2 = st.columns(2)
         
-        # 表示
-        col1, col2 = st.columns([1,1])
-        
-        # 左：カード
         with col1:
-            img_b64 = get_base64_from_file(card_data['file'])
-            img_src = f"data:image/jpeg;base64,{img_b64}" if img_b64 else "https://placehold.co/300x300/000/FFF?text=Card"
-            
+            img_b64 = get_base64_of_bin_file(card_data['file'])
+            src = f"data:image/jpeg;base64,{img_b64}" if img_b64 else "https://placehold.co/300x300/000/FFF?text=Card"
             st.markdown(f"""
-            <div class="card-container">
-                <div class="card-inner">
-                    <h2 style="color:#FFD700; margin:0;">{card_data['title']}</h2>
-                    <p style="color:#AAA;">THE {r_type.upper()}</p>
-                    <img src="{img_src}" style="width:100%; border-radius:10px; border:2px solid #FFD700; margin:15px 0;">
-                    <p style="font-size:1.2em; font-weight:bold; color:#FFF;">“{d_res['desc']}”</p>
+            <div class="card-frame">
+                <div class="card-content">
+                    <h2 style="color:#FFD700;">{card_data['title']}</h2>
+                    <img src="{src}" style="width:100%; border-radius:10px; margin:10px 0;">
+                    <p style="color:#FFF; font-weight:bold;">“{d_res['desc']}”</p>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-
-        # 右：チャートと詳細
+        
         with col2:
-            # チャートデータ作成
-            scores = [0, 0, 0, 0, 0] # 仮の5角形データ（本来はクイズ集計値を入れる）
-            # 簡易集計
+            # 簡易チャート
             raw = {"fire":0, "water":0, "wind":0}
             for k,v in st.session_state.answers.items():
                 for q in QUESTIONS:
                     if q["id"]==k: raw[q["options"][v]] += 1
-            
-            vals = [raw["fire"], raw["water"], raw["wind"], (raw["fire"]+raw["wind"])/1.5, (raw["fire"]+raw["water"])/1.5, raw["fire"]]
-            
-            fig = go.Figure(data=go.Scatterpolar(
-                r=vals,
-                theta=['実行力','論理力','共感力','創造性','戦略性','実行力'],
-                fill='toself',
-                line_color='#FFD700'
-            ))
-            fig.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                polar=dict(
-                    bgcolor='rgba(0,0,0,0.5)',
-                    radialaxis=dict(visible=True, range=[0, 10], showticklabels=False),
-                    angularaxis=dict(tickfont=dict(color='white', size=14))
-                ),
-                margin=dict(l=40, r=40, t=40, b=40),
-                height=350
-            )
+            fig = go.Figure(data=go.Scatterpolar(r=[raw["fire"], raw["water"], raw["wind"], raw["fire"]], theta=['実行力','論理力','共感力','実行力'], fill='toself', line_color='#FFD700'))
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', polar=dict(bgcolor='rgba(0,0,0,0.5)', radialaxis=dict(visible=True, range=[0, 10])), showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
             
             st.markdown(f"""
-            <div style="background:rgba(0,0,0,0.6); padding:20px; border-radius:10px; border:1px solid #FFD700;">
-                <p><b>🗝️ 才能:</b> {' / '.join(d_res['skills'])}</p>
+            <div style="background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; border:1px solid #FFD700;">
+                <p><b>🗝️ スキル:</b> {' / '.join(d_res['skills'])}</p>
                 <p><b>💼 適職:</b> {' / '.join(d_res['jobs'])}</p>
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div style="margin-top:20px; background:rgba(255,248,220,0.95); padding:20px; border-radius:10px; border:3px double #8B4513; color:#3E2723;">
-            <h3 style="color:#8B4513 !important; margin-top:0;">📜 Oracle's Message</h3>
-            {st.session_state.final_advice}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"<div style='background:rgba(255,248,220,0.9); padding:20px; border-radius:10px; color:#3E2723; margin-top:20px;'><h3>📜 Message</h3>{st.session_state.final_advice}</div>", unsafe_allow_html=True)
         
-        if st.button("↩️ 最初に戻る"):
-            st.session_state.clear()
-            st.rerun()
+        if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()
