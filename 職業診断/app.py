@@ -10,12 +10,12 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
 
-# --- ページ設定 ---
+# --- ページ設定 (必ず一番最初に記述) ---
 st.set_page_config(
     page_title="FORTUNE CAREER",
     page_icon="🔮",
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL
+# 背景画像のWeb URL（ローカル画像がない場合の保険）
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
@@ -41,7 +41,7 @@ QUESTIONS = [
     {"id": "q10", "q": "X. 伝説の終わり - 卒業時、周りからどう言われたい？", "options": {"🔥 「あいつは凄かった、伝説だ」": "fire", "💧 「あいつがいれば何でも解決した」": "water", "🌿 「あいつがいてくれて本当に楽しかった」": "wind"}},
 ]
 
-# --- 関数群 ---
+# --- ヘルパー関数 ---
 def get_api_key():
     if "GEMINI_API_KEY" in st.secrets:
         return st.secrets["GEMINI_API_KEY"]
@@ -52,11 +52,13 @@ def get_api_key():
 
 def get_base64_of_bin_file(bin_file):
     try:
+        # カレントディレクトリ
         if os.path.exists(bin_file):
             with open(bin_file, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data).decode()
         
+        # スクリプトディレクトリ
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, bin_file)
         if os.path.exists(file_path):
@@ -72,11 +74,11 @@ def apply_custom_css(bg_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 全体のフォント設定（ちょうどいいサイズ感に調整） */
+        /* 全体のフォント設定（ちょうどいいサイズ感） */
         html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
             color: #E0E0E0 !important;
-            font-size: 1.05rem !important; /* 標準サイズ */
+            font-size: 1.05rem !important; 
         }}
 
         /* 背景画像設定 */
@@ -99,7 +101,7 @@ def apply_custom_css(bg_url):
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
             text-shadow: 0 0 10px #FFD700, 0 0 20px #000;
-            font-size: 3.5rem !important; /* 4.5 -> 3.5 */
+            font-size: 3.5rem !important;
             text-align: center;
             margin-top: 20px !important;
         }}
@@ -111,20 +113,20 @@ def apply_custom_css(bg_url):
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            font-size: 1.2rem; /* 1.5 -> 1.2 */
+            font-size: 1.2rem;
             line-height: 2;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }}
 
-        /* 質問文のスタイル（h3タグ） */
+        /* 質問文 */
         h3 {{
-            font-size: 1.6rem !important; /* 2.0 -> 1.6 */
+            font-size: 1.6rem !important;
             color: #FFD700 !important;
             text-shadow: 2px 2px 4px #000;
-            margin-bottom: 15px !important;
+            margin-bottom: 20px !important;
         }}
 
-        /* ラジオボタン（選択肢） */
+        /* ラジオボタン（選択肢）のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(20, 20, 40, 0.9) !important;
             border: 1px solid #FFD700 !important;
@@ -140,13 +142,13 @@ def apply_custom_css(bg_url):
             transform: translateX(5px);
             box-shadow: 0 0 10px #FFD700;
         }}
-        /* 選択肢の文字サイズ */
         div[role="radiogroup"] label p {{
-            font-size: 1.25rem !important; /* 1.6 -> 1.25 */
+            font-size: 1.25rem !important;
             font-weight: bold !important; 
             color: #FFFFFF !important;
         }}
 
+        /* チャットUI */
         [data-testid="stBottom"] {{ background: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
@@ -155,28 +157,27 @@ def apply_custom_css(bg_url):
             border-radius: 25px !important;
             font-size: 1.1rem !important;
         }}
-
         div[data-testid="stChatMessage"] {{
             background-color: rgba(20, 10, 30, 0.9) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
         }}
         div[data-testid="stChatMessage"] p {{
-            font-size: 1.1rem !important; /* チャット文字サイズ */
+            font-size: 1.1rem !important;
             line-height: 1.6;
         }}
 
-        /* ボタン共通 */
+        /* ボタン */
         .stButton button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #DAA520) !important;
             color: black !important;
             font-weight: bold !important;
             border: none !important;
-            padding: 12px !important;
+            padding: 15px !important;
             border-radius: 30px !important;
             font-family: 'Cinzel', serif !important;
-            font-size: 1.3rem !important; /* ボタン文字サイズ */
+            font-size: 1.3rem !important;
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
         }}
         .stButton button:hover {{
@@ -184,6 +185,7 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
         }}
         
+        /* 結果カード */
         .card-frame {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -272,14 +274,13 @@ def main():
     mansion_local = get_base64_of_bin_file("mansion.jpg")
     room_local = get_base64_of_bin_file("room.jpg")
     
-    # 背景切り替え
+    # 背景切り替えロジック
     bg_css_url = f"url('{URL_BG_MANSION}')"
     if st.session_state.step == 0:
         if mansion_local:
             bg_css_url = f"url('data:image/jpeg;base64,{mansion_local}')"
-        else:
-            bg_css_url = f"url('{URL_BG_MANSION}')"
     else:
+        # STEP 1以降は「部屋」
         if room_local:
             bg_css_url = f"url('data:image/jpeg;base64,{room_local}')"
         else:
@@ -290,7 +291,7 @@ def main():
     # --- STEP 0: トップ ---
     if st.session_state.step == 0:
         st.markdown('<div class="main-title">FORTUNE CAREER</div>', unsafe_allow_html=True)
-        st.markdown('<div style="text-align:center; margin-bottom:40px;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
+        st.markdown('<div style="text-align:center; margin-bottom:40px; font-size:1.5rem;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -311,7 +312,7 @@ def main():
     # --- STEP 1: 質問 ---
     elif st.session_state.step == 1:
         st.markdown('<div class="main-title">The 10 Prophecies</div>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align:center; color:#DDD;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align:center; color:#DDD; font-size:1.2rem;">そなたの価値観について、10の問いに答えよ…</p>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
@@ -448,5 +449,4 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
 
