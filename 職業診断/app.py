@@ -29,9 +29,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像（デフォルト：外観）
+# 背景画像（デフォルト）
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
-# 背景画像（デフォルト：部屋の中 ※room.jpgがない場合の保険）
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
 # 質問データ
@@ -100,6 +99,7 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
 
+        /* 導入文のデザイン */
         .intro-text {{
             font-size: 1.5rem !important;
             line-height: 2.2; 
@@ -114,6 +114,7 @@ def apply_custom_css(bg_image_url):
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
+        /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -134,8 +135,15 @@ def apply_custom_css(bg_image_url):
             color: #FFFFFF !important;
         }}
 
-        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
-        [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
+        /* チャットUI（透明化 & 入力欄） */
+        [data-testid="stBottom"] {{
+            background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+        }}
+        [data-testid="stBottom"] > div {{
+            background-color: transparent !important;
+        }}
 
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.85) !important;
@@ -161,6 +169,7 @@ def apply_custom_css(bg_image_url):
         }}
         div[data-testid="stChatMessage"] .stAvatar {{ background-color: #FFD700 !important; color: #000 !important; }}
 
+        /* ボタンデザイン */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
@@ -177,6 +186,7 @@ def apply_custom_css(bg_image_url):
         }}
         div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
 
+        /* タロットカード */
         .tarot-card-outer {{
             padding: 5px; 
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -288,32 +298,27 @@ def main():
 
     api_key = get_api_key()
     
-    # 画像読み込み
     bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
     bg_room_base64 = get_base64_of_bin_file("room.jpg")
     
-    # ★背景ロジック修正: ローカル画像がない場合は、必ず「適切なWeb画像」を使う
-    # これにより「room.jpgがないからといってmansion.jpgを使う」誤作動を防ぐ
+    # 背景切り替え
     bg_css_url = f"url('{URL_BG_MANSION}')"
-    
     if st.session_state.step in [0, 1]:
-        # ステップ0,1は外観
         if bg_mansion_base64:
             bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
         else:
             bg_css_url = f"url('{URL_BG_MANSION}')"
             
     elif st.session_state.step in [2, 3]:
-        # ステップ2,3は部屋の中
         if bg_room_base64:
             bg_css_url = f"url('data:image/jpeg;base64,{bg_room_base64}')"
         else:
-            # ここでmansionにフォールバックせず、URL_BG_ROOMを使うのが正解
+            # 部屋の画像がない場合はWebの部屋画像を使う
             bg_css_url = f"url('{URL_BG_ROOM}')"
 
     apply_custom_css(bg_css_url)
 
-    # STEP 0: トップ
+    # STEP 0: トップ（導入文復活）
     if st.session_state.step == 0:
         st.markdown('<h1 class="main-title">FORTUNE CAREER</h1>', unsafe_allow_html=True)
         st.markdown('<div style="text-align:center; font-size:1.5rem; margin-bottom:2rem; color:#FFD700; text-shadow:1px 1px 2px black;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
@@ -331,7 +336,7 @@ def main():
                 if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
                 else: st.session_state.step = 1; st.rerun()
 
-    # STEP 1: クイズ（変数名 q_data に統一して修正）
+    # STEP 1: クイズ（変数名修正・枠あり・初期選択なし）
     elif st.session_state.step == 1:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>The 10 Prophecies</h1>", unsafe_allow_html=True)
         col_m1, col_m2, col_m3 = st.columns([1, 3, 1])
@@ -361,7 +366,6 @@ def main():
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
-            # プロンプト強化：職業適性重視 + 具体性重視
             system_prompt = f"""
             あなたは「運命の館」の主であり、裏の顔は【学生専門の凄腕キャリアコンサルタント】です。
             ユーザーの診断属性「{main_attr}」に基づき、職業適性をガチで分析するためのヒアリングを行ってください。
@@ -480,4 +484,5 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
+
 
