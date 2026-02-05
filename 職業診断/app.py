@@ -10,7 +10,7 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
@@ -448,4 +448,5 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
+
 
