@@ -7,9 +7,9 @@ import plotly.graph_objects as go
 import json
 import streamlit.components.v1 as components
 
-# --- 設定: 使用するモデル ---
-# ⚠️ 安定稼働のため "gemini-1.5-flash" を指定
-MODELS_TO_TRY = ["gemini-2.5-flash"]
+# --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
+# 2.0-flashがダメなら1.5-flash、それもダメなら1.5-proに自動で切り替わります
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 
 # --- ページ設定 ---
 st.set_page_config(
@@ -60,11 +60,8 @@ def get_base64_of_bin_file(bin_file):
     except Exception:
         return None
 
-# --- HTML生成関数 ---
-def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_base64):
-    if not senpai_data:
-        senpai_data = {"name": "名無しの先輩", "job": "謎の職業", "message": "道は自分で切り拓くものだ。"}
-
+# --- HTML生成関数 (デザイン修正版) ---
+def create_result_html(base_data, dynamic_data, final_advice, img_base64):
     html = f"""
     <!DOCTYPE html>
     <html lang="ja">
@@ -141,36 +138,6 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
                 line-height: 2.0;
                 font-size: 1.1em;
             }}
-            /* 先輩BOXのスタイル（ダウンロード用） */
-            .senpai-box {{
-                background: rgba(240, 248, 255, 0.95);
-                color: #1a0f2e !important; 
-                border-radius: 15px;
-                padding: 25px;
-                margin-top: 30px;
-                text-align: left;
-                border-left: 10px solid #4682B4;
-            }}
-            .senpai-header {{
-                display: flex;
-                align-items: center;
-                margin-bottom: 15px;
-                border-bottom: 1px solid #ccc;
-                padding-bottom: 10px;
-            }}
-            .senpai-icon {{
-                font-size: 2em;
-                margin-right: 15px;
-            }}
-            .senpai-info {{
-                font-size: 0.9em;
-                color: #333 !important;
-            }}
-            .senpai-name {{
-                font-weight: bold;
-                font-size: 1.2em;
-                color: #000 !important;
-            }}
             ul {{ padding-left: 20px; }}
             li {{ margin-bottom: 10px; }}
         </style>
@@ -207,19 +174,6 @@ def create_result_html(base_data, dynamic_data, final_advice, senpai_data, img_b
                     {final_advice.replace('\n', '<br>')}
                 </div>
             </div>
-
-            <div class="senpai-box">
-                <div class="senpai-header">
-                    <div class="senpai-icon">🎓</div>
-                    <div>
-                        <div class="senpai-name">{senpai_data['name']} 先輩</div>
-                        <div class="senpai-info">現職: {senpai_data['job']}</div>
-                    </div>
-                </div>
-                <div style="line-height: 1.8; font-weight: 500; color: #1a0f2e !important;">
-                    「{senpai_data['message']}」
-                </div>
-            </div>
             
             <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
         </div>
@@ -254,11 +208,10 @@ def apply_custom_css(bg_image_url):
         }}
         
         h1, h2, h3, h4, p, div, span, label, li {{
-            color: #E0E0E0;
+            color: #E0E0E0 !important;
             font-family: 'Shippori Mincho B1', serif;
             letter-spacing: 0.05em;
         }}
-        
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
@@ -267,10 +220,19 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* 先輩ボックス用の文字色指定 */
-        .senpai-content, .senpai-content div, .senpai-content span, .senpai-content p {{
-            color: #1a0f2e !important;
-            text-shadow: none !important;
+        /* --- ここが重要：文字の視認性向上 --- */
+        .intro-text {{
+            font-size: 1.5rem !important; /* 文字を大きく */
+            line-height: 2.2; 
+            text-align: center; 
+            color: #FFD700; 
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0, 0, 0, 0.85); /* 背景を濃くして文字を読ませる */
+            padding: 30px; 
+            border-radius: 15px;
+            border: 2px solid #FFD700; /* 金色の枠線 */
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
         /* --- ボタンデザイン --- */
@@ -279,6 +241,7 @@ def apply_custom_css(bg_image_url):
         div[data-testid="stDownloadButton"] button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
+            background-size: 200% 200%;
             color: #000000 !important;
             border: 2px solid #FFFFFF !important;
             border-radius: 50px !important;
@@ -287,6 +250,10 @@ def apply_custom_css(bg_image_url):
             font-size: 1.5rem !important;
             padding: 15px 30px !important;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
+            text-shadow: none !important;
+            margin-top: 20px !important;
+            transition: all 0.3s ease !important;
+            animation: shine 3s infinite alternate;
         }}
         
         div[data-testid="stFormSubmitButton"] button:hover, 
@@ -297,28 +264,49 @@ def apply_custom_css(bg_image_url):
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
             color: #000000 !important;
         }}
+        
+        div[data-testid="stDownloadButton"] button * {{
+            color: #000000 !important;
+        }}
 
+        /* 選択肢のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
             padding: 20px !important; 
             border-radius: 15px !important; 
             margin-bottom: 15px !important; 
+            cursor: pointer; 
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }}
+        div[role="radiogroup"] label:hover {{
+            border-color: #FFD700 !important;
+            background-color: rgba(50, 50, 50, 1.0) !important;
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }}
         div[role="radiogroup"] label p {{
             font-size: 1.3rem !important; 
             font-weight: bold !important; 
             color: #FFFFFF !important;
+            text-shadow: 1px 1px 2px #000;
         }}
 
+        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
+        [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
             color: #FFFFFF !important;
             border: 2px solid #FFD700 !important;
+            border-radius: 20px !important;
         }}
         .stChatMessage {{
             background-color: rgba(10, 10, 20, 0.85) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
+            border-radius: 15px !important;
+            padding: 10px !important;
+            margin-bottom: 10px !important;
         }}
         
         .tarot-card-outer {{
@@ -330,7 +318,7 @@ def apply_custom_css(bg_image_url):
             background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center;
         }}
         .result-simple-text {{
-            color: #FFD700 !important; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
+            color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
             background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block;
         }}
         .advice-box {{
@@ -359,7 +347,7 @@ def calculate_type():
     res_type = first_attr if (first_score - second_score >= 2) else "-".join(sorted([first_attr, second_attr]))
     return res_type, first_attr
 
-# --- AI応答関数 ---
+# --- AI応答関数（API制限対策・自動切り替え機能付き） ---
 def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
@@ -380,7 +368,7 @@ def get_gemini_response(prompt, api_key):
             print(f"Model {model_name} failed: {e}")
             continue
     
-    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中、またはAPI設定エラー）。"
+    return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中）。時間を置いて再度お試しください。"
 
 # --- メイン処理 ---
 def main():
@@ -389,7 +377,6 @@ def main():
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     if "final_advice" not in st.session_state: st.session_state.final_advice = ""
     if "dynamic_result" not in st.session_state: st.session_state.dynamic_result = None
-    if "senpai_data" not in st.session_state: st.session_state.senpai_data = None
 
     api_key = get_api_key()
     
@@ -409,7 +396,7 @@ def main():
         st.markdown("""
         <div style="text-align: center;">
             <h1 class="main-title">FORTUNE CAREER</h1>
-            <p style='letter-spacing: 0.1em; color: #FFD700 !important; font-size: 1.5em; margin-top: 10px; font-weight:bold; text-shadow: 2px 2px 4px #000;'>〜 学生のためのAI職業診断 〜</p>
+            <p style='letter-spacing: 0.1em; color: #FFD700; font-size: 2.0em; margin-top: 15px; font-weight:bold; text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); display: inline-block; padding: 5px 20px; border-radius: 10px;'>〜 学生のためのAI職業診断 〜</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -433,14 +420,14 @@ def main():
         with col_main2:
             st.markdown("""
             <div style="text-align: center; margin-bottom: 30px;">
-                <p style="margin-top: 20px; font-style: italic; font-size: 1.5em; color: #FFD700 !important; font-weight: 900; text-shadow: 2px 2px 0px #000;">
+                <p style="margin-top: 20px; font-style: italic; font-size: 1.5em; color: #FFD700; font-weight: 900; text-shadow: 2px 2px 0px #000;">
                     「そなたの価値観について、10の問いに答えよ…」
                 </p>
             </div>
             """, unsafe_allow_html=True)
             with st.form("questions_form"):
                 for q_data in QUESTIONS:
-                    st.markdown(f"<h3 style='color:#FFD700 !important; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h3 style='color:#FFD700; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
                     choice = st.radio("選択肢", list(q_data['options'].keys()), key=q_data['id'], label_visibility="collapsed", index=None)
                     if choice: st.session_state.answers[q_data['id']] = choice
                     st.markdown("<hr style='border-color: rgba(255,215,0,0.3); margin: 30px 0;'>", unsafe_allow_html=True)
@@ -513,7 +500,6 @@ def main():
         
         res_type, _ = calculate_type()
         
-        # タイプ情報
         type_info = {
             "fire": {"title": "開拓の騎士", "sub": "THE LEADER", "simple_text": "行動力と情熱でチームを引っ張るリーダータイプ", "file": "icon_fire.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Leader"},
             "water": {"title": "叡智の賢者", "sub": "THE ENGINEER", "simple_text": "論理的思考で問題を解決する分析・開発タイプ", "file": "icon_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Wizard"},
@@ -528,7 +514,6 @@ def main():
             with st.spinner("精霊たちが会話の記憶から、あなたの真の能力を紡ぎ出しています..."):
                 genai.configure(api_key=api_key)
                 
-                # 1.5-flashのみで試行
                 success = False
                 for model_name in MODELS_TO_TRY:
                     try:
@@ -561,7 +546,7 @@ def main():
                         
                         st.session_state.dynamic_result = json.loads(text)
                         success = True
-                        break 
+                        break
                     except Exception as e:
                         print(f"Analysis Model {model_name} failed: {e}")
                         continue
@@ -624,19 +609,18 @@ def main():
             """, unsafe_allow_html=True)
 
         with col_res2:
-            st.markdown("<h3 style='text-align: center; color: #FFD700 !important; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center; color: #FFD700; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
             st.markdown(f"""
             <div style="background: rgba(15, 15, 25, 0.9); padding: 25px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); margin-top: 10px;">
                 <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">🗝️ 今伸ばすべきスキル:</p>
-                <p style="font-size: 1.1em; margin-bottom: 20px; color: #fff;">{' / '.join(dynamic_data['skills'])}</p>
+                <p style="font-size: 1.1em; margin-bottom: 20px;">{' / '.join(dynamic_data['skills'])}</p>
                 <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">💼 おすすめインターン・適職:</p>
-                <p style="font-size: 1.3em; font-weight: bold; color: #fff;">{' / '.join(dynamic_data['jobs'])}</p>
+                <p style="font-size: 1.3em; font-weight: bold;">{' / '.join(dynamic_data['jobs'])}</p>
             </div>
             """, unsafe_allow_html=True)
 
-        # --- 賢者からの助言 ---
         if not st.session_state.final_advice:
             prompt = f"""
             ユーザーの診断結果: {base_data['title']}
@@ -656,79 +640,18 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- 先輩からのアドバイス 生成ロジック ---
-        if not st.session_state.senpai_data:
-            with st.spinner("同じ星を持つ先輩の声を呼び出しています..."):
-                for model_name in MODELS_TO_TRY:
-                    try:
-                        model = genai.GenerativeModel(model_name)
-                        # 先輩生成用プロンプト
-                        senpai_prompt = f"""
-                        設定: あなたはかつて「{base_data['title']}」タイプと診断された社会人の先輩です。
-                        現在、以下の職業のいずれか、あるいは関連する職種で働いています: {','.join(dynamic_data['jobs'])}
-                        
-                        後輩であるこの学生に向けて、仕事のリアルや、学生時代にやってよかったことなど、
-                        占い師ではなく「生身の人間」として、現実的かつ少しフランクなアドバイスをください。
-
-                        出力フォーマット (JSONのみ):
-                        {{
-                            "name": "架空の先輩の名前 (例: 〇〇 〇〇)",
-                            "job": "具体的な現在の職業 (例: 大手メーカーの広報)",
-                            "message": "アドバイス内容 (100文字程度。〜だよ、〜だと思うよ、等の口調)"
-                        }}
-                        """
-                        response = model.generate_content(senpai_prompt)
-                        text = response.text.strip()
-                        if text.startswith("```json"): text = text[7:]
-                        if text.endswith("```"): text = text[:-3]
-                        st.session_state.senpai_data = json.loads(text)
-                        break
-                    except Exception as e:
-                        print(f"Senpai Generation Failed: {e}")
-                        continue
-                
-                # 失敗した場合のデフォルト
-                if not st.session_state.senpai_data:
-                    st.session_state.senpai_data = {
-                        "name": "未来の先輩", "job": "プロフェッショナル", "message": "君なら大丈夫。自分の直感を信じて進めば、必ず道は開けるよ。"
-                    }
-
-        # --- 先輩アドバイスの表示UI (文字色修正済み) ---
-        st.markdown(f"""
-        <div class="senpai-content" style="
-            background: rgba(240, 248, 255, 0.95); 
-            border-radius: 15px; 
-            padding: 20px; 
-            margin-top: 20px; 
-            border-left: 8px solid #4682B4;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        ">
-            <div style="display: flex; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
-                <div style="font-size: 2em; margin-right: 15px;">🎓</div>
-                <div>
-                    <div style="font-weight: bold; font-size: 1.1em;">{st.session_state.senpai_data['name']} 先輩</div>
-                    <div style="font-size: 0.9em;">現職: {st.session_state.senpai_data['job']}</div>
-                </div>
-            </div>
-            <div style="font-style: italic; line-height: 1.6; font-weight: 600;">
-                「{st.session_state.senpai_data['message']}」
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # --- HTMLダウンロードボタン (注釈文を金色に修正) ---
+        # --- HTMLダウンロードボタン ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
-            html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, st.session_state.senpai_data, user_icon if user_icon else "")
+            html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
             st.download_button(
                 label="📄 結果をHTMLファイルで保存",
                 data=html_data,
                 file_name="fortune_result.html",
                 mime="text/html"
             )
-            # ここを修正：通常の st.caption ではなく、金色のHTMLテキストとして表示
-            st.markdown('<p style="color: #FFD700; text-align: center; font-size: 0.9em; margin-top: 5px;">※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。</p>', unsafe_allow_html=True)
+            st.caption("※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("↩️ 最初に戻る"):
