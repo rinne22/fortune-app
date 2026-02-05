@@ -12,8 +12,6 @@ import streamlit.components.v1 as components
 # ==========================================
 
 # ★★★ テストモード設定 ★★★
-# True にすると、APIを使わず「テスト用の固定文」を返します（API料金・制限対策）
-# 本番公開するときは、ここを False に書き換えてください。
 TEST_MODE = True 
 
 # 使用するモデルの優先順位
@@ -49,7 +47,6 @@ QUESTIONS = [
 # --- ヘルパー関数 ---
 
 def get_api_key():
-    # テストモードならAPIキーチェックもスキップ気味でOKだが、一応チェック
     try:
         if "GEMINI_API_KEY" in st.secrets:
             return st.secrets["GEMINI_API_KEY"]
@@ -143,8 +140,24 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* --- チャットメッセージのデザイン強化 --- */
-        /* コンテナ全体（assistant/user共通） */
+        /* --- 入力欄のデザイン（ここを劇的改善！） --- */
+        .stChatInput textarea {{
+            background-color: rgba(0, 0, 0, 0.7) !important; /* 背景を黒く半透明に */
+            color: #FFD700 !important; /* 入力文字を金色に */
+            border: 2px solid #FFD700 !important; /* 金色の枠線 */
+            border-radius: 30px !important; /* 丸みを強く */
+            caret-color: #FFD700 !important; /* カーソルも金色に */
+            font-family: 'Shippori Mincho B1', serif !important;
+        }}
+        .stChatInput textarea::placeholder {{
+            color: rgba(255, 215, 0, 0.5) !important; /* プレースホルダーは薄い金 */
+        }}
+        /* 送信ボタンの色調整 */
+        button[data-testid="stChatInputSubmitButton"] {{
+            color: #FFD700 !important;
+        }}
+
+        /* --- チャット吹き出し --- */
         div[data-testid="stChatMessage"] {{
             background-color: rgba(20, 10, 40, 0.9) !important;
             border: 1px solid rgba(255, 215, 0, 0.6) !important;
@@ -153,32 +166,13 @@ def apply_custom_css(bg_image_url):
             margin-bottom: 15px !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
         }}
-        
-        /* ユーザーのメッセージだけ少し色を変える */
         div[data-testid="stChatMessage"][data-test-role="user"] {{
             background-color: rgba(40, 40, 60, 0.9) !important;
             border-color: rgba(100, 100, 255, 0.4) !important;
         }}
-
-        /* アバターアイコン */
         div[data-testid="stChatMessage"] .stAvatar {{
             background-color: #FFD700 !important;
             color: #000 !important;
-        }}
-
-        /* メッセージ内のテキスト */
-        div[data-testid="stChatMessage"] div[data-testid="stMarkdownContainer"] p {{
-            font-size: 1.1rem !important;
-            color: #FFF !important;
-            line-height: 1.6 !important;
-        }}
-
-        /* 入力欄 */
-        .stChatInput textarea {{
-            background-color: rgba(0, 0, 0, 0.85) !important;
-            color: #FFFFFF !important;
-            border: 2px solid #FFD700 !important;
-            border-radius: 20px !important;
         }}
 
         /* ボタン */
@@ -204,7 +198,6 @@ def apply_custom_css(bg_image_url):
         }}
         div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
 
-        /* 選択肢 */
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
             border: 2px solid rgba(255, 215, 0, 0.6) !important;
@@ -241,12 +234,10 @@ def calculate_type():
 
 # --- AI応答関数（テストモード対応版） ---
 def get_gemini_response(prompt, api_key):
-    # ★ テストモードがONなら、AIを呼ばずに固定文を返す
     if TEST_MODE:
-        time.sleep(1) # 通信しているフリ（演出）
+        time.sleep(1) 
         return "【テストモード】これはAPIを使わないテスト用の返信じゃ。\nそなたの言葉は届いておるぞ。API消費を気にせず、UIの確認をするがよい。\n\n（※本番ではここにAIの深い洞察が入ります）"
 
-    # ここから下が通常モード（API使用）
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     
@@ -401,8 +392,6 @@ def main():
                 success = False
                 for model_name in MODELS_TO_TRY:
                     try:
-                        # ... (API呼び出しロジックは省略、同じなので)
-                        # ここでは簡略化のため、エラー時はダミーを入れる
                         st.session_state.dynamic_result = {"skills": ["分析中..."], "jobs": ["分析中..."], "desc": "APIエラー"}
                         success = True
                         break 
@@ -450,9 +439,8 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
-        # アドバイス生成（テストモードならスキップ）
         if not st.session_state.final_advice and not TEST_MODE:
-            prompt = f"ユーザーの診断結果: {base_data['title']}..." # (略)
+            prompt = f"ユーザーの診断結果: {base_data['title']}..." 
             with st.spinner("運命を記しています..."):
                 st.session_state.final_advice = get_gemini_response(prompt, api_key)
 
@@ -477,4 +465,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
