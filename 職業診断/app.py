@@ -11,11 +11,11 @@ import streamlit.components.v1 as components
 # 🔧 設定エリア
 # ==========================================
 
-# ★★★ 本番モード ★★★
+# ★★★ 本番モード (APIを使用する) ★★★
 TEST_MODE = False 
 
 # 使用するモデルの優先順位 (API制限対策)
-MODELS_TO_TRY = ["gemini-2.5-flash","gemini-2.0-flash"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 
 # ==========================================
 
@@ -30,7 +30,7 @@ st.set_page_config(
 # --- 定数 ---
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
 
-# 質問データ
+# 質問データ (修正完了)
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -39,7 +39,7 @@ QUESTIONS = [
     {"id": "q5", "q": "V. 試練の刻 - バイトや部活でトラブル発生！どう動く？", "options": {"⚡️ 自分が先頭に立って、その場で解決する": "fire", "🔍 なぜ起きたか原因を分析し、再発を防ぐ": "water", "📣 周りの人に状況を伝え、協力を仰ぐ": "wind"}},
     {"id": "q6", "q": "VI. 交信の作法 - プレゼンや発表で意識することは？", "options": {"🔥 「情熱」や「想い」を熱く伝える": "fire", "💧 「データ」や「論理」を正確に伝える": "water", "🌿 「聞き手」が楽しんでいるかを気にする": "wind"}},
     {"id": "q7", "q": "VII. 失敗の代償 - テストや試合で負けた時、どう思う？", "options": {"🔥 「次は絶対勝つ！」と闘志を燃やす": "fire", "💧 「敗因は何か？」と冷静に分析する": "water", "🌿 「チームに申し訳ない」と責任を感じる": "wind"}},
-    {"id": "q8", "=\nVIII. 究極スキル - 今、大学生活で身につけたい力は？", "options": {"🔥 人を巻き込み、何かを成し遂げる「行動力」": "fire", "💧 物事の本質を見抜き、解決する「思考力」": "water", "🌿 誰とでも信頼関係を築ける「対人力」": "wind"}},
+    {"id": "q8", "q": "VIII. 究極スキル - 今、大学生活で身につけたい力は？", "options": {"🔥 人を巻き込み、何かを成し遂げる「行動力」": "fire", "💧 物事の本質を見抜き、解決する「思考力」": "water", "🌿 誰とでも信頼関係を築ける「対人力」": "wind"}},
     {"id": "q9", "q": "IX. 安息の地 - 休日の理想的な過ごし方は？", "options": {"🔥 イベントや旅行など、アクティブに動く": "fire", "💧 読書、映画、ゲームなど、知識を深める": "water", "🌿 友達や恋人とカフェでのんびり話す": "wind"}},
     {"id": "q10", "q": "X. 伝説の終わり - 卒業時、周りからどう言われたい？", "options": {"🔥 「あいつは凄かった、伝説だ」": "fire", "💧 「あいつがいれば何でも解決した」": "water", "🌿 「あいつがいてくれて本当に楽しかった」": "wind"}},
 ]
@@ -140,7 +140,6 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
 
-        /* 文字の視認性向上（intro-text） */
         .intro-text {{
             font-size: 1.5rem !important;
             line-height: 2.2; 
@@ -155,7 +154,7 @@ def apply_custom_css(bg_image_url):
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
-        /* --- チャットUI改善 --- */
+        /* --- チャットUI 透明化対応済み --- */
         [data-testid="stBottom"] {{
             background-color: transparent !important;
             background: transparent !important;
@@ -238,6 +237,10 @@ def calculate_type():
 
 # --- AI応答関数 (本番用) ---
 def get_gemini_response(prompt, api_key):
+    if TEST_MODE:
+        time.sleep(1) 
+        return "【テストモード】これはAPIを使わないテスト用の返信じゃ。"
+    
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     for model_name in MODELS_TO_TRY:
@@ -252,7 +255,6 @@ def get_gemini_response(prompt, api_key):
             if not response.text: raise ValueError("Empty response")
             return response.text 
         except Exception as e:
-            print(f"Model {model_name} failed: {e}")
             continue
     return "申し訳ございません。現在、星々の声が届きにくくなっております。時間を置いて再度お試しください。"
 
@@ -293,7 +295,7 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             if st.button("🚪 運命の扉を開く"):
-                if not api_key: st.error("⚠️ APIキーを設定してください")
+                if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
                 else: st.session_state.step = 1; st.rerun()
 
     # STEP 1: 質問フォーム
@@ -365,7 +367,7 @@ def main():
         dynamic_data = st.session_state.dynamic_result
         user_icon = get_base64_of_bin_file(base_data['file'])
         
-        # グラフ・表示
+        # グラフ
         raw_scores = {"fire":0, "water":0, "wind":0}
         for q_id, label in st.session_state.answers.items():
             for q in QUESTIONS:
