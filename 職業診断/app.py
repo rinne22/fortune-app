@@ -10,7 +10,7 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash", "gemini-2.0-flash"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL（ローカル画像がない場合の保険）
+# 背景画像のWeb URL
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
@@ -50,15 +50,14 @@ def get_api_key():
         if val: return val
     return None
 
+@st.cache_data
 def get_base64_of_bin_file(bin_file):
     try:
-        # カレントディレクトリ
         if os.path.exists(bin_file):
             with open(bin_file, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data).decode()
         
-        # スクリプトディレクトリ
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, bin_file)
         if os.path.exists(file_path):
@@ -74,7 +73,7 @@ def apply_custom_css(bg_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 全体のフォント設定（ちょうどいいサイズ感） */
+        /* 全体のフォント設定 */
         html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
             color: #E0E0E0 !important;
@@ -113,7 +112,7 @@ def apply_custom_css(bg_url):
             border-radius: 15px;
             padding: 30px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.2rem; 
             line-height: 2;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }}
@@ -167,22 +166,30 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ボタン */
+        /* ★ボタン（真実を明らかにするボタン等）の超強化★ */
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+
         .stButton button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #DAA520) !important;
             color: black !important;
-            font-weight: bold !important;
-            border: none !important;
-            padding: 15px !important;
-            border-radius: 30px !important;
+            font-weight: 900 !important; /* 太字を最強に */
+            border: 2px solid white !important; /* 白枠追加 */
+            padding: 20px 15px !important; /* サイズアップ */
+            border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
-            font-size: 1.3rem !important;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+            font-size: 1.6rem !important; /* 文字サイズアップ */
+            animation: pulse-gold 2s infinite; /* 発光アニメーション */
+            transition: transform 0.1s;
+            margin-top: 10px;
         }}
         .stButton button:hover {{
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #FFF, #FFD700) !important; /* ホバーで白く輝く */
         }}
         
         /* 結果カード */
@@ -279,8 +286,9 @@ def main():
     if st.session_state.step == 0:
         if mansion_local:
             bg_css_url = f"url('data:image/jpeg;base64,{mansion_local}')"
+        else:
+            bg_css_url = f"url('{URL_BG_MANSION}')"
     else:
-        # STEP 1以降は「部屋」
         if room_local:
             bg_css_url = f"url('data:image/jpeg;base64,{room_local}')"
         else:
@@ -291,7 +299,7 @@ def main():
     # --- STEP 0: トップ ---
     if st.session_state.step == 0:
         st.markdown('<div class="main-title">FORTUNE CAREER</div>', unsafe_allow_html=True)
-        st.markdown('<div style="text-align:center; margin-bottom:40px; font-size:1.5rem;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
+        st.markdown('<div style="text-align:center; margin-bottom:40px;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -320,6 +328,9 @@ def main():
                 for q_data in QUESTIONS:
                     st.markdown(f"<h3 style='color:#FFD700; text-shadow:1px 1px 2px #000;'>{q_data['q']}</h3>", unsafe_allow_html=True)
                     st.radio("選択肢", list(q_data['options'].keys()), key=f"ans_{q_data['id']}", index=None, label_visibility="collapsed")
+                
+                # ボタン前にスペースを空ける
+                st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
                 
                 if st.form_submit_button("🔮 真実を明らかにする"):
                     valid = True
@@ -350,8 +361,11 @@ def main():
             
             【役割】
             占い師の口調（〜じゃ、そなた、〜かのう）で話してください。
-            しかし、質問内容は「ガクチカ」や「自己分析」のための超具体的な深掘りです。
-            専門用語は使わず、「学生時代に一番熱中したこと」を聞き出してください。
+            質問内容は「ガクチカ」や「自己分析」のための超具体的な深掘りです。
+            
+            【禁止事項】
+            絶対に「選択肢」や「以下から選んでください」といった提示をしてはいけません。
+            対話として自然に、一つだけ質問を投げかけてください。
             """
             st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(first_prompt, api_key)})
 
@@ -367,7 +381,12 @@ def main():
             if user_count < MAX_TURN_COUNT:
                 if val := st.chat_input("回答を入力..."):
                     st.session_state.chat_history.append({"role": "user", "content": val})
-                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n追加で一つだけ深掘り質問をして。" if user_count+1 < MAX_TURN_COUNT else "十分な情報が集まりました。占い師として「運命の結果が出た」と締めくくって。"
+                    
+                    if user_count + 1 >= MAX_TURN_COUNT:
+                        next_prompt = "十分な情報が集まりました。占い師として「ふむ、そなたの進むべき道が見えたぞ...」と、結果を見るよう促すセリフだけで締めくくってください。選択肢は不要です。"
+                    else:
+                        next_prompt = f"会話履歴:{st.session_state.chat_history}\n占い師として、学生の強みを特定するための鋭い追加質問を1つだけ行ってください。選択肢は提示しないでください。"
+                    
                     st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
                     st.rerun()
             else:
@@ -391,13 +410,16 @@ def main():
 
         if not st.session_state.dynamic_result:
             with st.spinner("分析中..."):
-                prompt = f"会話履歴:{st.session_state.chat_history} から強み分析JSONを出力: {{'skills':[], 'jobs':[], 'desc':''}}"
+                prompt = f"会話履歴:{st.session_state.chat_history} から強み分析JSONを出力: {{'skills':['スキル1','スキル2','スキル3'], 'jobs':['職種1','職種2','職種3'], 'desc':'一言キャッチコピー'}} JSON形式のみ出力せよ。"
                 try:
                     res = get_gemini_response(prompt, api_key)
-                    json_str = res[res.find('{'):res.rfind('}')+1].replace("'", '"')
-                    st.session_state.dynamic_result = json.loads(json_str)
+                    # コードブロック除去
+                    cleaned_res = res.replace("```json", "").replace("```", "").strip()
+                    st.session_state.dynamic_result = json.loads(cleaned_res)
                 except: st.session_state.dynamic_result = {"skills":["分析"], "jobs":["総合職"], "desc":"可能性"}
-                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師としてアドバイスを。", api_key)
+                
+                adv_prompt = "診断結果に基づき、占い師として学生の背中を押すアドバイスを300文字でください。選択肢は不要です。"
+                st.session_state.final_advice = get_gemini_response(adv_prompt, api_key)
 
         d_res = st.session_state.dynamic_result
         col1, col2 = st.columns(2)
@@ -449,4 +471,3 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
