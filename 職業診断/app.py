@@ -10,7 +10,7 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash", "gemini-1.5-flash"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL（ローカル画像がない場合の保険）
+# 背景画像のWeb URL
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
@@ -69,7 +69,7 @@ def get_base64_of_bin_file(bin_file):
     return None
 
 def apply_custom_css(bg_url):
-    # f-string内でCSSの波括弧を使うため、{{ }} でエスケープしています
+    # 【重要】f-string内ではCSSの { } を {{ }} にエスケープする必要があります
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
@@ -167,7 +167,7 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ボタンアニメーション（修正済み） */
+        /* ボタンのスタイルとアニメーション */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
@@ -184,7 +184,7 @@ def apply_custom_css(bg_url):
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
             font-size: 1.6rem !important;
-            animation: pulse-gold 2s infinite; /* アニメーション適用 */
+            animation: pulse-gold 2s infinite; 
             transition: transform 0.1s;
             margin-top: 10px;
         }}
@@ -278,7 +278,7 @@ def main():
 
     api_key = get_api_key()
     
-    # 画像ファイル読み込み（キャッシュあり）
+    # 画像ファイル読み込み
     mansion_local = get_base64_of_bin_file("mansion.jpg")
     room_local = get_base64_of_bin_file("room.jpg")
     
@@ -330,7 +330,6 @@ def main():
                     st.markdown(f"<h3 style='color:#FFD700; text-shadow:1px 1px 2px #000;'>{q_data['q']}</h3>", unsafe_allow_html=True)
                     st.radio("選択肢", list(q_data['options'].keys()), key=f"ans_{q_data['id']}", index=None, label_visibility="collapsed")
                 
-                # ボタン前にスペース
                 st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
                 
                 if st.form_submit_button("🔮 真実を明らかにする"):
