@@ -29,7 +29,7 @@ st.set_page_config(
 # 背景画像（デフォルト）
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
 
-# 質問データ (修正済み：q7, q8の記述ミスを解消)
+# 質問データ (構文エラー修正済み)
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -60,21 +60,129 @@ def apply_custom_css(bg_image_url):
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
-        .stApp {{ background-image: {bg_image_url} !important; background-size: cover; background-attachment: fixed; }}
-        .stApp::before {{ content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: -1; }}
         
-        h1, h2, h3, p, div, span, label, li {{ color: #E0E0E0 !important; font-family: 'Shippori Mincho B1', serif; }}
+        #MainMenu, footer, header, [data-testid="stToolbar"], .stDeployButton {{ visibility: hidden; display: none; }}
         
-        .main-title {{ font-family: 'Cinzel', serif !important; color: #FFD700 !important; font-size: 4rem !important; text-align: center; margin-top: 5vh !important; text-shadow: 0 0 10px #FFD700; }}
+        .block-container {{ padding-top: 2rem !important; padding-bottom: 150px !important; }}
+
+        .stApp {{
+            background-color: #050510; 
+            background-image: {bg_image_url} !important;
+            background-size: cover !important;
+            background-repeat: no-repeat !important;
+            background-attachment: fixed !important;
+            background-position: center center !important;
+        }}
+        .stApp::before {{
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
+        }}
         
-        /* 下部の白い余白を透明化 */
-        [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
-        
-        /* チャット入力欄のデザイン */
-        .stChatInput textarea {{ background-color: rgba(0, 0, 0, 0.8) !important; color: #FFD700 !important; border: 2px solid #FFD700 !important; border-radius: 20px !important; }}
-        
-        /* チャット吹き出しのデザイン */
-        div[data-testid="stChatMessage"] {{ background-color: rgba(20, 10, 40, 0.9) !important; border: 1px solid #FFD700 !important; border-radius: 15px !important; }}
+        h1, h2, h3, h4, p, div, span, label, li {{
+            color: #E0E0E0 !important;
+            font-family: 'Shippori Mincho B1', serif;
+            letter-spacing: 0.05em;
+        }}
+        .main-title {{
+            font-family: 'Cinzel', serif !important;
+            color: #FFD700 !important;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
+            font-size: 4rem !important; text-align: center;
+            margin-top: 5vh !important;
+        }}
+
+        /* --- 導入文のデザイン（ここを復活！） --- */
+        .intro-text {{
+            font-size: 1.5rem !important;
+            line-height: 2.2; 
+            text-align: center; 
+            color: #FFD700; 
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px; 
+            border-radius: 15px;
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }}
+
+        /* --- 選択肢のデザイン（枠囲み復活！） --- */
+        div[role="radiogroup"] label {{
+            background-color: rgba(0, 0, 0, 0.9) !important;
+            border: 2px solid rgba(255, 215, 0, 0.6) !important;
+            padding: 20px !important; 
+            border-radius: 15px !important; 
+            margin-bottom: 15px !important; 
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }}
+        div[role="radiogroup"] label:hover {{
+            border-color: #FFD700 !important;
+            background-color: rgba(50, 50, 50, 1.0) !important;
+            transform: translateX(5px);
+        }}
+        div[role="radiogroup"] label p {{
+            font-size: 1.3rem !important; 
+            font-weight: bold !important; 
+            color: #FFFFFF !important;
+        }}
+
+        /* --- チャットUI（透明化 & 入力欄リッチ化） --- */
+        [data-testid="stBottom"] {{
+            background-color: transparent !important;
+            background: transparent !important;
+            border: none !important;
+        }}
+        [data-testid="stBottom"] > div {{
+            background-color: transparent !important;
+        }}
+
+        .stChatInput textarea {{
+            background-color: rgba(0, 0, 0, 0.85) !important;
+            color: #FFD700 !important;
+            border: 2px solid #FFD700 !important;
+            border-radius: 30px !important;
+            caret-color: #FFD700 !important;
+            font-family: 'Shippori Mincho B1', serif !important;
+        }}
+        button[data-testid="stChatInputSubmitButton"] {{ color: #FFD700 !important; }}
+
+        div[data-testid="stChatMessage"] {{
+            background-color: rgba(20, 10, 40, 0.9) !important;
+            border: 1px solid rgba(255, 215, 0, 0.6) !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            margin-bottom: 15px !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+        }}
+        div[data-testid="stChatMessage"][data-test-role="user"] {{
+            background-color: rgba(40, 40, 60, 0.9) !important;
+            border-color: rgba(100, 100, 255, 0.4) !important;
+        }}
+        div[data-testid="stChatMessage"] .stAvatar {{ background-color: #FFD700 !important; color: #000 !important; }}
+
+        /* ボタンデザイン */
+        div[data-testid="stFormSubmitButton"] button, 
+        .stButton button,
+        div[data-testid="stDownloadButton"] button {{
+            width: 100%;
+            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
+            color: #000000 !important;
+            border: 2px solid #FFFFFF !important;
+            border-radius: 50px !important;
+            font-family: 'Cinzel', serif !important;
+            font-weight: 900 !important;
+            font-size: 1.5rem !important;
+            padding: 15px 30px !important;
+            margin-top: 20px !important;
+        }}
+        div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
+
+        .tarot-card-outer {{ padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7); border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); margin: 0 auto; max-width: 600px; }}
+        .tarot-card-inner {{ background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center; }}
+        .result-simple-text {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px; background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block; }}
+        .advice-box {{ background: rgba(255, 248, 220, 0.9); border: 3px double #8B4513; border-radius: 10px; padding: 25px; margin-top: 30px; color: #3E2723 !important; }}
+        .advice-box * {{ color: #3E2723 !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -142,13 +250,25 @@ def main():
     if st.session_state.step == 0:
         st.markdown('<h1 class="main-title">FORTUNE CAREER</h1>', unsafe_allow_html=True)
         st.markdown('<div style="text-align:center; font-size:1.5rem; margin-bottom:2rem;">〜 学生のためのAI職業診断 〜</div>', unsafe_allow_html=True)
-        if st.button("🚪 運命の扉を開く"):
-            if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
-            else: st.session_state.step = 1; st.rerun()
+        
+        # 導入文とボタンのレイアウト
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div class="intro-text">
+                ようこそ、迷える若き魂よ。<br>
+                ここは星々の導きと、就活の叡智が交わる場所。<br>
+                あなたの真の才能と、未来のキャリアを紐解いて進ぜよう。
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🚪 運命の扉を開く"):
+                if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
+                else: st.session_state.step = 1; st.rerun()
 
     # STEP 1: クイズ（初期選択なし）
     elif st.session_state.step == 1:
-        st.markdown("<h1 style='text-align:center;'>The 10 Prophecies</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>The 10 Prophecies</h1>", unsafe_allow_html=True)
         with st.form("quiz"):
             for q in QUESTIONS:
                 st.markdown(f"### {q['q']}")
@@ -158,7 +278,7 @@ def main():
                 if None in st.session_state.answers.values(): st.error("まだ答えられていない予言があります。")
                 else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット
+    # STEP 2: チャット（占い師風・平易な表現）
     elif st.session_state.step == 2:
         st.markdown("<h1 style='text-align:center;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
@@ -192,8 +312,8 @@ def main():
             with st.spinner("能力を紡ぎ出しています..."):
                 analysis = get_gemini_response(f"会話履歴 {st.session_state.chat_history} から強みを分析しJSONで出力せよ: {{'skills':[], 'jobs':[], 'desc':''}}", api_key)
                 try: st.session_state.dynamic_result = json.loads(analysis[analysis.find('{'):analysis.rfind('}')+1].replace("'", '"'))
-                except: st.session_state.dynamic_result = {"skills":["努力"], "jobs":["総合職"], "desc":"可能性あり"}
-                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ300文字程度の分かりやすく熱いアドバイスを送れ。", api_key)
+                except: st.session_state.dynamic_result = {"skills":["努力"], "jobs":["総合職"], "desc":"大いなる可能性"}
+                st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ分かりやすく熱いアドバイスを送れ。", api_key)
 
         col1, col2 = st.columns(2)
         with col1:
