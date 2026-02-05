@@ -15,7 +15,7 @@ MAX_TURN_COUNT = 3
 
 # ==========================================
 
-# --- ページ設定 (必ず一番最初に記述) ---
+# --- ページ設定 ---
 st.set_page_config(
     page_title="FORTUNE CAREER",
     page_icon="🔮",
@@ -73,7 +73,6 @@ def apply_custom_css(bg_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 全体のフォント設定 */
         html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
             color: #E0E0E0 !important;
@@ -95,7 +94,6 @@ def apply_custom_css(bg_url):
 
         [data-testid="stHeader"] {{ visibility: hidden; }}
 
-        /* タイトル */
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
@@ -105,7 +103,6 @@ def apply_custom_css(bg_url):
             margin-top: 20px !important;
         }}
 
-        /* 導入文ボックス */
         .intro-box {{
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid #FFD700;
@@ -117,7 +114,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }}
 
-        /* 質問文 */
         h3 {{
             font-size: 1.6rem !important;
             color: #FFD700 !important;
@@ -125,7 +121,6 @@ def apply_custom_css(bg_url):
             margin-bottom: 20px !important;
         }}
 
-        /* ラジオボタン（選択肢）のデザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(20, 20, 40, 0.9) !important;
             border: 1px solid #FFD700 !important;
@@ -147,7 +142,6 @@ def apply_custom_css(bg_url):
             color: #FFFFFF !important;
         }}
 
-        /* チャットUI */
         [data-testid="stBottom"] {{ background: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
@@ -166,39 +160,36 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ★ボタンデザインの決定版（白排除・金統一）★ */
+        /* ★ボタン修正★ 白くしない。フォーム送信ボタンも強制的に金色にする */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
             100% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }}
         }}
 
-        /* 特定のボタンだけでなく、すべてのボタンを金＆黒にする */
-        .stButton button {{
+        /* 通常のボタンと、フォーム送信ボタン(stFormSubmitButton)の両方を指定 */
+        .stButton button, 
+        [data-testid="stFormSubmitButton"] button {{
             width: 100% !important;
-            /* 背景：リッチな金色のグラデーション */
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            /* 文字色：完全な黒で見やすく */
-            color: #000000 !important;
+            color: #000000 !important; /* 文字は黒 */
             font-weight: 900 !important;
-            /* 枠線：白ではなく、少し濃い金色で引き締める */
-            border: 2px solid #8B6508 !important;
+            border: 2px solid #8B6508 !important; /* 枠線も金色 */
             padding: 20px 30px !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
             font-size: 1.6rem !important;
             text-shadow: none !important;
-            /* 発光アニメーション */
             animation: pulse-gold 2s infinite !important;
             transition: all 0.3s ease !important;
             margin-top: 15px !important;
         }}
         
-        /* ホバー時も白くしない。より輝く金色へ */
-        .stButton button:hover {{
+        .stButton button:hover,
+        [data-testid="stFormSubmitButton"] button:hover {{
             transform: scale(1.05) !important;
             background: linear-gradient(45deg, #FFED4B, #FFD700) !important;
-            border-color: #8B6508 !important; /* 枠線維持 */
+            border-color: #8B6508 !important;
             color: #000000 !important;
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.8) !important;
         }}
@@ -342,6 +333,7 @@ def main():
                 
                 st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
                 
+                # ここが修正ポイント：フォーム送信ボタン
                 if st.form_submit_button("🔮 真実を明らかにする"):
                     valid = True
                     temp_ans = {}
