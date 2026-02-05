@@ -10,7 +10,7 @@ import json
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
-MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash", "gemini-2.5-pro"]
+MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
 MAX_TURN_COUNT = 3
 
 # ==========================================
@@ -79,7 +79,6 @@ def apply_custom_css(bg_url):
             font-size: 1.05rem !important; 
         }}
 
-        /* 背景画像設定 */
         [data-testid="stAppViewContainer"] {{
             background-image: {bg_url} !important;
             background-size: cover !important;
@@ -160,21 +159,20 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ★ボタン修正★ 白くしない。フォーム送信ボタンも強制的に金色にする */
+        /* ★ボタン：金色、黒文字、発光アニメーション */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
             100% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }}
         }}
 
-        /* 通常のボタンと、フォーム送信ボタン(stFormSubmitButton)の両方を指定 */
         .stButton button, 
         [data-testid="stFormSubmitButton"] button {{
             width: 100% !important;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important; /* 文字は黒 */
+            color: #000000 !important; /* 黒文字 */
             font-weight: 900 !important;
-            border: 2px solid #8B6508 !important; /* 枠線も金色 */
+            border: 2px solid #8B6508 !important; /* 濃い金の枠 */
             padding: 20px 30px !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -194,7 +192,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.8) !important;
         }}
         
-        /* 結果カード */
         .card-frame {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -224,7 +221,7 @@ def apply_custom_css(bg_url):
 def get_gemini_response(prompt, api_key):
     if TEST_MODE: 
         time.sleep(1)
-        return "【テスト】そなたの運命、しかと見届けた。"
+        return "【テスト】そなたの運命、しかと見届けたぞ。"
     
     if not api_key: return "⚠️ APIキーを設定してください。"
     genai.configure(api_key=api_key)
@@ -283,7 +280,7 @@ def main():
     mansion_local = get_base64_of_bin_file("mansion.jpg")
     room_local = get_base64_of_bin_file("room.jpg")
     
-    # 背景切り替えロジック
+    # 背景切り替え
     bg_css_url = f"url('{URL_BG_MANSION}')"
     if st.session_state.step == 0:
         if mansion_local:
@@ -333,7 +330,6 @@ def main():
                 
                 st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
                 
-                # ここが修正ポイント：フォーム送信ボタン
                 if st.form_submit_button("🔮 真実を明らかにする"):
                     valid = True
                     temp_ans = {}
@@ -357,17 +353,22 @@ def main():
         
         if not st.session_state.chat_history:
             _, main_attr = calculate_type()
+            # プロンプト修正：「〜じゃ」口調、かつ具体的で分かりやすく
             first_prompt = f"""
-            あなたは「運命の館」の主（占い師）であり、超一流の学生キャリアコンサルタントです。
+            あなたは「運命の館」の主（占い師）であり、同時に超一流の学生キャリアコンサルタントです。
             ユーザーの属性は「{main_attr}」です。
             
             【役割】
-            占い師の口調（〜じゃ、そなた、〜かのう）で話してください。
-            質問内容は「ガクチカ」や「自己分析」のための超具体的な深掘りです。
+            ・口調は「〜じゃ」「〜かのう」といった威厳ある占い師口調で話してください。
+            ・しかし、質問内容は「ガクチカ」や「自己分析」を引き出すための、非常に具体的で分かりやすいものにしてください。
             
-            【禁止事項】
-            絶対に「選択肢」や「以下から選んでください」といった提示をしてはいけません。
-            対話として自然に、一つだけ質問を投げかけてください。
+            【最初の質問】
+            学生時代の経験を深掘りするために、一つ質問をしてください。
+            その際、抽象的な質問ではなく、「例えば部活でリーダーをした経験はあるか？」や「アルバイトで工夫したことはあるか？」など、
+            **具体的な例を挙げて**、学生が答えやすいように導いてください。
+            
+            【禁止】
+            ・選択肢の提示は絶対にしないこと。
             """
             st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(first_prompt, api_key)})
 
@@ -385,9 +386,9 @@ def main():
                     st.session_state.chat_history.append({"role": "user", "content": val})
                     
                     if user_count + 1 >= MAX_TURN_COUNT:
-                        next_prompt = "十分な情報が集まりました。占い師として「ふむ、そなたの進むべき道が見えたぞ...」と、結果を見るよう促すセリフだけで締めくくってください。選択肢は不要です。"
+                        next_prompt = "十分な情報が集まりました。占い師として「ふむ、そなたの進むべき道が見えたぞ...」と伝え、結果を見るよう促してください。選択肢は不要です。"
                     else:
-                        next_prompt = f"会話履歴:{st.session_state.chat_history}\n占い師として、学生の強みを特定するための鋭い追加質問を1つだけ行ってください。選択肢は提示しないでください。"
+                        next_prompt = f"会話履歴:{st.session_state.chat_history}\n占い師として、学生の強みを特定するための鋭い追加質問を1つだけ行ってください。「〜じゃ」口調で、かつ具体例を交えて分かりやすく聞いてください。選択肢は提示しないでください。"
                     
                     st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
                     st.rerun()
@@ -419,7 +420,8 @@ def main():
                     st.session_state.dynamic_result = json.loads(cleaned_res)
                 except: st.session_state.dynamic_result = {"skills":["分析"], "jobs":["総合職"], "desc":"可能性"}
                 
-                adv_prompt = "診断結果に基づき、占い師として学生の背中を押すアドバイスを300文字でください。選択肢は不要です。"
+                # アドバイス用プロンプトも「〜じゃ」口調で分かりやすく
+                adv_prompt = "診断結果に基づき、占い師として「〜じゃ」口調で、学生の背中を押すアドバイスを300文字でください。具体的な職種やアクションを含めて分かりやすく。"
                 st.session_state.final_advice = get_gemini_response(adv_prompt, api_key)
 
         d_res = st.session_state.dynamic_result
