@@ -29,7 +29,7 @@ st.set_page_config(
 # --- 定数 ---
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
 
-# 質問データ (タイポ修正・初期選択解除対応済み)
+# 質問データ
 QUESTIONS = [
     {"id": "q1", "q": "I. 魂の渇望 - 将来、仕事を通じて得たいものは？", "options": {"💰 高い年収と社会的地位（成功・野心）": "fire", "🧠 専門スキルと知的好奇心（成長・探究）": "water", "🤝 仲間からの感謝と安心感（貢献・安定）": "wind"}},
     {"id": "q2", "q": "II. 魔力の源泉 - グループワークや部活での役割は？", "options": {"🔥 皆を引っ張るリーダー・部長タイプ": "fire", "💧 計画を立てる参謀・書記タイプ": "water", "🌿 間を取り持つ調整役・ムードメーカー": "wind"}},
@@ -37,7 +37,7 @@ QUESTIONS = [
     {"id": "q4", "q": "IV. 求める秘宝 - 居心地が良いと感じる環境は？", "options": {"👑 実力主義で、成果を出せば評価される場所": "fire", "📜 静かで、自分の研究や作業に没頭できる場所": "water", "🕊️ アットホームで、先輩後輩が仲良い場所": "wind"}},
     {"id": "q5", "q": "V. 試練の刻 - バイトや部活でトラブル発生！どう動く？", "options": {"⚡️ 自分が先頭に立って、その場で解決する": "fire", "🔍 なぜ起きたか原因を分析し、再発を防ぐ": "water", "📣 周りの人に状況を伝え、協力を仰ぐ": "wind"}},
     {"id": "q6", "q": "VI. 交信の作法 - プレゼンや発表で意識することは？", "options": {"🔥 「情熱」や「想い」を熱く伝える": "fire", "💧 「データ」や「論理」を正確に伝える": "water", "🌿 「聞き手」が楽しんでいるかを気にする": "wind"}},
-    {"id": "q7", "q": "VII. 失敗の代償 - テストや試合で負けた時、どう思う？", "options": {"🔥 「次は絶対勝つ！」と闘志を燃やす": "fire", "💧 「敗因は何か？」と冷静に分析する": "water", "🌿 「チームに申し訳ない」と責任を感じる": "wind"}},
+    {"id": "q7", "VII. 失敗の代償 - テストや試合で負けた時、どう思う？", "options": {"🔥 「次は絶対勝つ！」と闘志を燃やす": "fire", "💧 「敗因は何か？」と冷静に分析する": "water", "🌿 「チームに申し訳ない」と責任を感じる": "wind"}},
     {"id": "q8", "q": "VIII. 究極スキル - 今、大学生活で身につけたい力は？", "options": {"🔥 人を巻き込み、何かを成し遂げる「行動力」": "fire", "💧 物事の本質を見抜き、解決する「思考力」": "water", "🌿 誰とでも信頼関係を築ける「対人力」": "wind"}},
     {"id": "q9", "q": "IX. 安息の地 - 休日の理想的な過ごし方は？", "options": {"🔥 イベントや旅行など、アクティブに動く": "fire", "💧 読書、映画、ゲームなど、知識を深める": "water", "🌿 友達や恋人とカフェでのんびり話す": "wind"}},
     {"id": "q10", "q": "X. 伝説の終わり - 卒業時、周りからどう言われたい？", "options": {"🔥 「あいつは凄かった、伝説だ」": "fire", "💧 「あいつがいれば何でも解決した」": "water", "🌿 「あいつがいてくれて本当に楽しかった」": "wind"}},
@@ -105,11 +105,8 @@ def apply_custom_css(bg_image_url):
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
-        
         #MainMenu, footer, header, [data-testid="stToolbar"], .stDeployButton {{ visibility: hidden; display: none; }}
-        
         .block-container {{ padding-top: 2rem !important; padding-bottom: 150px !important; }}
-
         .stApp {{
             background-color: #050510; 
             background-image: {bg_image_url} !important;
@@ -122,92 +119,20 @@ def apply_custom_css(bg_image_url):
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); z-index: -1; pointer-events: none;
         }}
-        
-        h1, h2, h3, h4, p, div, span, label, li {{
-            color: #E0E0E0 !important;
-            font-family: 'Shippori Mincho B1', serif;
-            letter-spacing: 0.05em;
-        }}
-        .main-title {{
-            font-family: 'Cinzel', serif !important;
-            color: #FFD700 !important;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
-            font-size: 4rem !important; text-align: center;
-            margin-top: 5vh !important;
-        }}
-
-        .intro-text {{
-            font-size: 1.5rem !important;
-            line-height: 2.2; 
-            text-align: center; 
-            color: #FFD700; 
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 30px; 
-            border-radius: 15px;
-            border: 2px solid #FFD700;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-        }}
-
-        /* --- チャットUI改善（透明化 & 入力欄） --- */
-        [data-testid="stBottom"] {{
-            background-color: transparent !important;
-            background: transparent !important;
-            border: none !important;
-        }}
+        h1, h2, h3, h4, p, div, span, label, li {{ color: #E0E0E0 !important; font-family: 'Shippori Mincho B1', serif; letter-spacing: 0.05em; }}
+        .main-title {{ font-family: 'Cinzel', serif !important; color: #FFD700 !important; text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; font-size: 4rem !important; text-align: center; margin-top: 5vh !important; }}
+        .intro-text {{ font-size: 1.5rem !important; line-height: 2.2; text-align: center; color: #FFD700; font-weight: bold; text-shadow: 2px 2px 4px #000; background: rgba(0, 0, 0, 0.85); padding: 30px; border-radius: 15px; border: 2px solid #FFD700; box-shadow: 0 0 20px rgba(0,0,0,0.8); }}
+        [data-testid="stBottom"] {{ background-color: transparent !important; background: transparent !important; border: none !important; }}
         [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
-
-        .stChatInput textarea {{
-            background-color: rgba(0, 0, 0, 0.85) !important;
-            color: #FFD700 !important;
-            border: 2px solid #FFD700 !important;
-            border-radius: 30px !important;
-            caret-color: #FFD700 !important;
-            font-family: 'Shippori Mincho B1', serif !important;
-        }}
+        .stChatInput textarea {{ background-color: rgba(0, 0, 0, 0.85) !important; color: #FFD700 !important; border: 2px solid #FFD700 !important; border-radius: 30px !important; caret-color: #FFD700 !important; font-family: 'Shippori Mincho B1', serif !important; }}
         button[data-testid="stChatInputSubmitButton"] {{ color: #FFD700 !important; }}
-
-        div[data-testid="stChatMessage"] {{
-            background-color: rgba(20, 10, 40, 0.9) !important;
-            border: 1px solid rgba(255, 215, 0, 0.6) !important;
-            border-radius: 15px !important;
-            padding: 20px !important;
-            margin-bottom: 15px !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-        }}
-        div[data-testid="stChatMessage"][data-test-role="user"] {{
-            background-color: rgba(40, 40, 60, 0.9) !important;
-            border-color: rgba(100, 100, 255, 0.4) !important;
-        }}
+        div[data-testid="stChatMessage"] {{ background-color: rgba(20, 10, 40, 0.9) !important; border: 1px solid rgba(255, 215, 0, 0.6) !important; border-radius: 15px !important; padding: 20px !important; margin-bottom: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important; }}
+        div[data-testid="stChatMessage"][data-test-role="user"] {{ background-color: rgba(40, 40, 60, 0.9) !important; border-color: rgba(100, 100, 255, 0.4) !important; }}
         div[data-testid="stChatMessage"] .stAvatar {{ background-color: #FFD700 !important; color: #000 !important; }}
-
-        /* ボタンデザインの統一 */
-        div[data-testid="stFormSubmitButton"] button, 
-        .stButton button,
-        div[data-testid="stDownloadButton"] button {{
-            width: 100%;
-            background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important;
-            border: 2px solid #FFFFFF !important;
-            border-radius: 50px !important;
-            font-family: 'Cinzel', serif !important;
-            font-weight: 900 !important;
-            font-size: 1.5rem !important;
-            padding: 15px 30px !important;
-            margin-top: 20px !important;
-        }}
+        div[data-testid="stFormSubmitButton"] button, .stButton button, div[data-testid="stDownloadButton"] button {{ width: 100%; background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important; color: #000000 !important; border: 2px solid #FFFFFF !important; border-radius: 50px !important; font-family: 'Cinzel', serif !important; font-weight: 900 !important; font-size: 1.5rem !important; padding: 15px 30px !important; margin-top: 20px !important; }}
         div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
-
-        div[role="radiogroup"] label {{
-            background-color: rgba(0, 0, 0, 0.9) !important;
-            border: 2px solid rgba(255, 215, 0, 0.6) !important;
-            padding: 20px !important; 
-            border-radius: 15px !important; 
-            margin-bottom: 15px !important; 
-        }}
+        div[role="radiogroup"] label {{ background-color: rgba(0, 0, 0, 0.9) !important; border: 2px solid rgba(255, 215, 0, 0.6) !important; padding: 20px !important; border-radius: 15px !important; margin-bottom: 15px !important; }}
         div[role="radiogroup"] label p {{ font-size: 1.3rem !important; font-weight: bold !important; color: #FFFFFF !important; }}
-
         .tarot-card-outer {{ padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7); border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); margin: 0 auto; max-width: 600px; }}
         .tarot-card-inner {{ background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center; }}
         .result-simple-text {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px; background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block; }}
@@ -229,8 +154,9 @@ def calculate_type():
     res_type = sorted_scores[0][0] if (sorted_scores[0][1] - sorted_scores[1][1] >= 2) else "-".join(sorted([sorted_scores[0][0], sorted_scores[1][0]]))
     return res_type, sorted_scores[0][0]
 
+# --- AI応答関数 ---
 def get_gemini_response(prompt, api_key):
-    if TEST_MODE: return "【テスト応答】精霊は沈黙しているが、運命は進んでいるぞ。"
+    if TEST_MODE: return "【テストモード】これはテスト用の返信じゃ。"
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
     for model_name in MODELS_TO_TRY:
@@ -271,7 +197,7 @@ def main():
                 if not api_key and not TEST_MODE: st.error("⚠️ APIキーを設定してください")
                 else: st.session_state.step = 1; st.rerun()
 
-    # STEP 1: クイズ (index=None 設定済み)
+    # STEP 1: クイズ
     elif st.session_state.step == 1:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>The 10 Prophecies</h1>", unsafe_allow_html=True)
         col_m1, col_m2, col_m3 = st.columns([1, 3, 1])
@@ -280,21 +206,34 @@ def main():
             with st.form("questions_form"):
                 for q_data in QUESTIONS:
                     st.markdown(f"<h3 style='color:#FFD700; text-shadow: 2px 2px 4px #000; font-size:1.4em;'>{q_data['q']}</h3>", unsafe_allow_html=True)
-                    # ここで index=None を追加し、初期選択を解除
                     st.radio("選択肢", list(q_data['options'].keys()), key=q_data['id'], label_visibility="collapsed", index=None)
                 if st.form_submit_button("🔮 真実を明らかにする"):
                     st.session_state.answers = {q['id']: st.session_state[q['id']] for q in QUESTIONS}
                     if None in st.session_state.answers.values():
                         st.error("まだ答えられていない予言があります。")
-                    else:
-                        st.session_state.step = 2; st.rerun()
+                    else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット
+    # STEP 2: チャット（占い師らしさと分かりやすさを両立）
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
-            system_prompt = f"あなたは学生専門のキャリア占い師です。属性「{main_attr}」に基づき、ガクチカやスキルを深掘りする問いかけを占い師口調でしてください。2回往復で終了して「運命の結果が整いました」と伝えて。"
+            # プロンプトの改善：神秘的な口調を指定しつつ、質問内容を「学生が答えやすい具体例」に絞るよう指示
+            system_prompt = f"""
+            あなたは「運命の館」の主であり、同時に学生専門のキャリアアドバイザーです。
+            ユーザーの診断属性は「{main_attr}」です。
+            
+            【話し方のルール】
+            1. 語尾は「〜じゃ」「〜かのう？」「そなた」など、神秘的な占い師の口調を貫く。
+            2. しかし、質問内容は学生が答えやすい「分かりやすい言葉」を使う。
+            3. 専門用語（ガクチカ、自己分析、PDCAなど）は使わず、「学生時代に夢中になったこと」や「自分の得意なこと」と言い換える。
+            
+            【ヒアリングの進め方】
+            1. 最初に挨拶し、属性に基づいた強みを褒める。
+            2. 「そなたがこれまでで、一番熱を注いだことは何じゃ？（部活やバイト、勉強など何でもよいぞ）」と問いかける。
+            3. 回答に対し、具体的な行動やそこから学んだことを2〜3回深掘りする。
+            4. 十分に聞けたら「運命の結果が整いました」と伝える。
+            """
             initial_response = get_gemini_response(system_prompt, api_key)
             st.session_state.chat_history.append({"role": "assistant", "content": initial_response})
 
@@ -306,7 +245,8 @@ def main():
         
         if prompt := st.chat_input("ここに回答を入力してください..."):
             st.session_state.chat_history.append({"role": "user", "content": prompt})
-            ai_res = get_gemini_response(f"これまでの会話: {st.session_state.chat_history}\n追加質問をするか、十分なら締めくくって。", api_key)
+            # 継続質問のためのプロンプト
+            ai_res = get_gemini_response(f"これまでの会話：{st.session_state.chat_history}\n占い師の口調を崩さず、学生がさらに具体的に話しやすくなるよう追加で1つ質問して。十分なら締めくくって。", api_key)
             st.session_state.chat_history.append({"role": "assistant", "content": ai_res})
             st.rerun()
 
@@ -362,7 +302,7 @@ def main():
             st.markdown(f"""<div style="background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; border:1px solid #FFD700;"><p style='color:#FFD700;'>🗝️ スキル: {' / '.join(dynamic_data['skills'])}</p><p style='color:#FFD700;'>💼 適職: {' / '.join(dynamic_data['jobs'])}</p></div>""", unsafe_allow_html=True)
 
         if not st.session_state.final_advice:
-            st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ熱いアドバイスを送れ。", api_key)
+            st.session_state.final_advice = get_gemini_response("診断結果に基づき、占い師として学生へ分かりやすく熱いアドバイスを送れ。", api_key)
         st.markdown(f"<div class='advice-box'><div style='font-weight:900; color:#8B4513;'>📜 Oracle's Message</div>{st.session_state.final_advice}</div>", unsafe_allow_html=True)
         
         html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
@@ -370,6 +310,4 @@ def main():
         if st.button("↩️ 最初に戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
-
 
