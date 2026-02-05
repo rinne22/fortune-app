@@ -11,11 +11,11 @@ import json
 # ==========================================
 TEST_MODE = False 
 MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-MAX_TURN_COUNT = 3
+MAX_TURN_COUNT = 3  # ここで会話回数を制限
 
 # ==========================================
 
-# --- ページ設定 (必ず一番最初に書く) ---
+# --- ページ設定 ---
 st.set_page_config(
     page_title="FORTUNE CAREER",
     page_icon="🔮",
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 背景画像のWeb URL（ローカル画像がない場合の保険）
+# 背景画像のWeb URL
 URL_BG_MANSION = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop'
 URL_BG_ROOM = 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop'
 
@@ -51,10 +51,16 @@ def get_api_key():
     return None
 
 def get_base64_of_bin_file(bin_file):
-    # 安全なファイル読み込み記述に修正
     try:
         if os.path.exists(bin_file):
             with open(bin_file, 'rb') as f:
+                data = f.read()
+            return base64.b64encode(data).decode()
+        
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, bin_file)
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data).decode()
     except Exception:
@@ -66,13 +72,11 @@ def apply_custom_css(bg_url):
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap');
         
-        /* 基本フォント設定 */
         html, body, [class*="st-"] {{
             font-family: 'Shippori Mincho B1', serif !important;
             color: #E0E0E0 !important;
         }}
 
-        /* 背景画像設定 (stAppViewContainerに適用) */
         [data-testid="stAppViewContainer"] {{
             background-image: {bg_url} !important;
             background-size: cover !important;
@@ -80,21 +84,13 @@ def apply_custom_css(bg_url):
             background-repeat: no-repeat !important;
             background-attachment: fixed !important;
         }}
-        
-        /* 背景を少し暗くするオーバーレイ */
         [data-testid="stAppViewContainer"]::before {{
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: -1;
-            pointer-events: none;
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); z-index: -1; pointer-events: none;
         }}
 
-        /* ヘッダー隠し */
         [data-testid="stHeader"] {{ visibility: hidden; }}
 
-        /* タイトル */
         .main-title {{
             font-family: 'Cinzel', serif !important;
             color: #FFD700 !important;
@@ -104,7 +100,6 @@ def apply_custom_css(bg_url):
             margin-top: 20px !important;
         }}
 
-        /* 導入文ボックス */
         .intro-box {{
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid #FFD700;
@@ -116,7 +111,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }}
 
-        /* ラジオボタンの金枠デザイン */
         div[role="radiogroup"] label {{
             background-color: rgba(20, 20, 40, 0.9) !important;
             border: 1px solid #FFD700 !important;
@@ -133,7 +127,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 10px #FFD700;
         }}
 
-        /* チャット入力欄 */
         [data-testid="stBottom"] {{ background: transparent !important; }}
         .stChatInput textarea {{
             background-color: rgba(0, 0, 0, 0.8) !important;
@@ -142,14 +135,12 @@ def apply_custom_css(bg_url):
             border-radius: 25px !important;
         }}
 
-        /* チャットメッセージ */
-        [data-testid="stChatMessage"] {{
+        div[data-testid="stChatMessage"] {{
             background-color: rgba(20, 10, 30, 0.9) !important;
             border: 1px solid rgba(255, 215, 0, 0.3) !important;
             border-radius: 15px !important;
         }}
 
-        /* ボタン共通 */
         .stButton button {{
             width: 100%;
             background: linear-gradient(45deg, #FFD700, #DAA520) !important;
@@ -167,7 +158,6 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8) !important;
         }}
         
-        /* 結果カード */
         .card-frame {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -242,21 +232,27 @@ def main():
 
     api_key = get_api_key()
     
-    # 画像データの準備（ローカルorWeb）
+    # 画像ファイル読み込み
     mansion_local = get_base64_of_bin_file("mansion.jpg")
     room_local = get_base64_of_bin_file("room.jpg")
     
-    # CSSのURL文字列を作成
-    css_mansion = f"url('data:image/jpeg;base64,{mansion_local}')" if mansion_local else f"url('{URL_BG_MANSION}')"
-    css_room = f"url('data:image/jpeg;base64,{room_local}')" if room_local else f"url('{URL_BG_ROOM}')"
-    
     # 背景切り替えロジック
-    # STEP 0: 外観
-    # STEP 1以降: 部屋
-    current_bg = css_mansion if st.session_state.step == 0 else css_room
+    bg_css_url = f"url('{URL_BG_MANSION}')" # デフォルト
     
-    # CSS適用
-    apply_custom_css(current_bg)
+    if st.session_state.step == 0:
+        # STEP 0: 外観
+        if mansion_local:
+            bg_css_url = f"url('data:image/jpeg;base64,{mansion_local}')"
+    else:
+        # STEP 1以降: 部屋
+        if room_local:
+            bg_css_url = f"url('data:image/jpeg;base64,{room_local}')"
+        else:
+            # 部屋画像がない場合はWebの部屋画像
+            bg_css_url = f"url('{URL_BG_ROOM}')"
+    
+    # スタイル適用
+    apply_custom_css(bg_css_url)
 
     # --- STEP 0: トップ ---
     if st.session_state.step == 0:
@@ -311,25 +307,39 @@ def main():
     # --- STEP 2: チャット (背景: 部屋) ---
     elif st.session_state.step == 2:
         st.markdown('<div class="main-title">Talk with Spirits</div>', unsafe_allow_html=True)
+        
         if not st.session_state.chat_history:
-            _, main_attr = calculate_type()
-            prompt = f"""
-            あなたは占い師兼キャリアアドバイザーです。属性{main_attr}の学生に対し、
-            「学生時代に最も力を入れたこと（ガクチカ）」を具体的に深掘りしてください。
-            語尾は「〜じゃ」などの占い師口調で。
+            r_type, main_attr = calculate_type()
+            first_prompt = f"""
+            あなたは「運命の館」の主（占い師）であり、超一流の学生キャリアコンサルタントです。
+            ユーザーの属性は「{main_attr}」です。
+            
+            【役割】
+            占い師の口調（〜じゃ、そなた、〜かのう）で話してください。
+            しかし、質問内容は「ガクチカ」や「自己分析」のための超具体的な深掘りです。
+            専門用語は使わず、「学生時代に一番熱中したこと」を聞き出してください。
             """
-            st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(prompt, api_key)})
+            st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(first_prompt, api_key)})
 
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            user_msg_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
-            for msg in st.session_state.chat_history:
-                with st.chat_message(msg["role"], avatar="🔮" if msg["role"] == "assistant" else "🧑‍🎓"): st.write(msg["content"])
+            user_count = len([m for m in st.session_state.chat_history if m["role"] == "user"])
             
-            if user_msg_count < MAX_TURN_COUNT:
+            for msg in st.session_state.chat_history:
+                icon = "🔮" if msg["role"] == "assistant" else "🧑‍🎓"
+                with st.chat_message(msg["role"], avatar=icon):
+                    st.write(msg["content"])
+            
+            if user_count < MAX_TURN_COUNT:
                 if val := st.chat_input("回答を入力..."):
                     st.session_state.chat_history.append({"role": "user", "content": val})
-                    next_prompt = f"会話履歴:{st.session_state.chat_history}\n追加で一つだけ深掘り質問をして。" if user_msg_count+1 < MAX_TURN_COUNT else "十分な情報が集まりました。占い師として「運命の結果が出た」と締めくくって。"
+                    
+                    # 変数名修正: user_msg_count ではなく user_count を使用
+                    if user_count + 1 >= MAX_TURN_COUNT:
+                        next_prompt = "十分な情報が集まりました。占い師として「ふむ、そなたの進むべき道が見えたぞ...」と締めくくり、結果を見るように促して。"
+                    else:
+                        next_prompt = f"会話履歴:{st.session_state.chat_history}\n占い師として、さらに具体的に職業適性を探る質問をして。"
+                    
                     st.session_state.chat_history.append({"role": "assistant", "content": get_gemini_response(next_prompt, api_key)})
                     st.rerun()
             else:
@@ -341,8 +351,14 @@ def main():
         st.balloons()
         st.markdown('<div class="main-title">Your Destiny Card</div>', unsafe_allow_html=True)
         r_type, _ = calculate_type()
-        cards = {"fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"}, "water": {"title": "叡智の賢者", "file": "icon_water.jpg"}, "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"},
-                 "fire-water": {"title": "蒼炎の軍師", "file": "icon_fire_water.jpg"}, "fire-wind": {"title": "陽光の詩人", "file": "icon_fire_wind.jpg"}, "water-wind": {"title": "星詠みの司書", "file": "icon_water_wind.jpg"}}
+        cards = {
+            "fire": {"title": "開拓の騎士", "file": "icon_fire.jpg"},
+            "water": {"title": "叡智の賢者", "file": "icon_water.jpg"},
+            "wind": {"title": "調和の精霊", "file": "icon_wind.jpg"},
+            "fire-water": {"title": "蒼炎の軍師", "file": "icon_fire_water.jpg"},
+            "fire-wind": {"title": "陽光の詩人", "file": "icon_fire_wind.jpg"},
+            "water-wind": {"title": "星詠みの司書", "file": "icon_water_wind.jpg"}
+        }
         card_data = cards.get(r_type, cards["fire"])
 
         if not st.session_state.dynamic_result:
@@ -393,4 +409,3 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
