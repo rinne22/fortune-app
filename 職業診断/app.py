@@ -191,6 +191,8 @@ def apply_custom_css(bg_image_url):
             padding: 30px; 
             text-align: center;
         }}
+        .result-sub {{ font-size: 1.2em; letter-spacing: 0.2em; color: #AAAAAA; }}
+        .result-title {{ font-size: 2.5em; margin: 15px 0; color: #FFD700; font-family: 'Cinzel', serif; }}
         .result-simple-text {{
             color: #FFD700; 
             font-weight: bold; 
@@ -201,6 +203,8 @@ def apply_custom_css(bg_image_url):
             border-radius: 15px; 
             display: inline-block;
         }}
+        .result-desc {{ font-size: 1.3em; font-style: italic; margin-top: 15px; color: #FFFFFF; }}
+        
         .advice-box {{
             background: rgba(255, 248, 220, 0.9); 
             border: 3px double #8B4513;
@@ -245,17 +249,29 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
             <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
                 body {{ background-color: #050510; color: #E0E0E0; font-family: 'Shippori Mincho B1', serif; text-align: center; padding: 40px; }}
-                .container {{ max-width: 800px; margin: 0 auto; background-color: #1a0f2e; border: 4px double #FFD700; border-radius: 20px; padding: 40px; }}
-                h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; text-shadow: 0 0 10px #FFD700; }}
-                .advice-text {{ line-height: 2.0; font-size: 1.1em; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; }}
+                .container {{ max-width: 800px; margin: 0 auto; background-color: #1a0f2e; border: 4px double #FFD700; border-radius: 20px; padding: 40px; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }}
+                h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; margin-bottom: 5px; text-shadow: 0 0 10px #FFD700; }}
+                .sub-title {{ color: #AAAAAA; letter-spacing: 0.2em; margin-bottom: 20px; }}
+                .catchphrase {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 20px; background: rgba(255, 215, 0, 0.1); display: inline-block; padding: 5px 15px; border-radius: 20px; }}
+                .main-img {{ width: 300px; height: 300px; object-fit: cover; border-radius: 50%; border: 3px solid #FFD700; margin: 10px auto; display: block; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }}
+                .section-box {{ background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 20px; margin: 30px 0; text-align: left; }}
+                .section-title {{ color: #FFD700; font-weight: bold; font-size: 1.2em; border-bottom: 1px solid #FFD700; padding-bottom: 5px; margin-bottom: 15px; }}
+                .advice-text {{ line-height: 2.0; font-size: 1.1em; }}
+                ul {{ padding-left: 20px; }}
+                li {{ margin-bottom: 10px; }}
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>{base_data['title']}</h1>
-                <img src="data:image/jpeg;base64,{img_base64}" style="width:250px; border-radius:50%; border:3px solid #FFD700; margin: 20px 0;">
-                <p style="font-size:1.5em; font-weight:bold;">“{dynamic_data.get('desc','運命は開かれた')}”</p>
-                <div class="advice-text">{final_advice.replace('\n', '<br>')}</div>
+                <div class="sub-title">{base_data['sub']}</div>
+                <div class="catchphrase">{base_data['simple_text']}</div>
+                <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
+                <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
+                <div class="section-box"><div class="section-title">🗝️ 今伸ばすべきスキル</div><ul>{''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}</ul></div>
+                <div class="section-box"><div class="section-title">💼 おすすめインターン・適職</div><ul>{''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}</ul></div>
+                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;"><div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div><div class="advice-text">{final_advice.replace('\n', '<br>')}</div></div>
+                <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
             </div>
         </body>
         </html>
@@ -345,6 +361,7 @@ def main():
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
             res_type, main_attr = calculate_type()
+            # プロンプト強化：職業適性重視 + 具体性重視
             system_prompt = f"""
             あなたは「運命の館」の主であり、裏の顔は【学生専門の凄腕キャリアコンサルタント】です。
             ユーザーの診断属性「{main_attr}」に基づき、職業適性をガチで分析するためのヒアリングを行ってください。
@@ -405,28 +422,48 @@ def main():
 
         user_icon = get_base64_of_bin_file(base_data['file'])
         
+        # レーダーチャート
         raw_scores = {"fire": 0, "water": 0, "wind": 0}
         for q_id, label in st.session_state.answers.items():
             for q in QUESTIONS:
                 if q["id"] == q_id: raw_scores[q["options"][label]] += 1
         
-        vals = [raw_scores["fire"], raw_scores["water"], raw_scores["wind"], (raw_scores["fire"]+raw_scores["wind"])/1.2, (raw_scores["fire"]+raw_scores["water"])/1.2]
+        vals = [
+            raw_scores["fire"], raw_scores["water"], raw_scores["wind"],
+            (raw_scores["fire"]+raw_scores["wind"])/1.2, (raw_scores["fire"]+raw_scores["water"])/1.2
+        ]
         vals += [vals[0]]
         categories = ['実行力', '論理力', '共感力', '創造性', '戦略性', '実行力']
 
         fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(r=vals, theta=categories, fill='toself', name=base_data['title'], line=dict(color='#FFD700', width=4), fillcolor='rgba(255, 215, 0, 0.5)', mode='lines+markers', marker=dict(size=10, color='#FFD700', symbol='diamond')))
-        fig.update_layout(paper_bgcolor='rgba(15, 15, 25, 0.9)', polar=dict(radialaxis=dict(visible=True, range=[0, 10], tickfont=dict(color='white', size=12, weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2, layer='below traces'), angularaxis=dict(tickfont=dict(color='#FFD700', size=15, family='Shippori Mincho B1', weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2), bgcolor='rgba(0,0,0,0)'), font=dict(color='white'), showlegend=False, margin=dict(l=60, r=60, t=60, b=60), height=400)
+        fig.add_trace(go.Scatterpolar(
+            r=vals, theta=categories, fill='toself', name=base_data['title'],
+            line=dict(color='#FFD700', width=4), fillcolor='rgba(255, 215, 0, 0.5)',
+            mode='lines+markers', marker=dict(size=10, color='#FFD700', symbol='diamond')
+        ))
+        fig.update_layout(
+            paper_bgcolor='rgba(15, 15, 25, 0.9)',
+            polar=dict(
+                radialaxis=dict(visible=True, range=[0, 10], tickfont=dict(color='white', size=12, weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2, layer='below traces'),
+                angularaxis=dict(tickfont=dict(color='#FFD700', size=15, family='Shippori Mincho B1', weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2),
+                bgcolor='rgba(0,0,0,0)'
+            ),
+            font=dict(color='white'), showlegend=False, margin=dict(l=60, r=60, t=60, b=60), height=400
+        )
 
         col1, col2 = st.columns([1, 1], gap="large")
         with col1:
             st.markdown(f"""
-            <div class="tarot-card-outer"><div class="tarot-card-inner">
-                <div class="result-sub">{base_data['sub']}</div><div class="result-title">{base_data['title']}</div>
-                <div class="result-simple-text">{base_data['simple_text']}</div>
-                <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" style="width:100%; border-radius:10px;">
-                <div class="result-desc">“{st.session_state.dynamic_result['desc']}”</div>
-            </div></div>""", unsafe_allow_html=True)
+            <div class="tarot-card-outer">
+                <div class="tarot-card-inner">
+                    <div class="result-sub">{base_data['sub']}</div>
+                    <div class="result-title">{base_data['title']}</div>
+                    <div class="result-simple-text">{base_data['simple_text']}</div>
+                    <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" style="width:100%; border-radius:10px;">
+                    <div class="result-desc">“{st.session_state.dynamic_result['desc']}”</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         with col2:
             st.markdown("<h3 style='text-align: center; color: #FFD700; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True)
@@ -443,7 +480,4 @@ def main():
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
-
-
 
