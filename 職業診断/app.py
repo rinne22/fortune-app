@@ -5,7 +5,6 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
-import re # 正規表現用（JSONのゴミ取り）
 import streamlit.components.v1 as components
 
 # --- 設定: 使用するモデルの優先順位リスト (API制限対策) ---
@@ -19,9 +18,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 定数・アセット定義（画像がない場合の保険） ---
+# --- 定数・アセット定義 ---
 URL_BG_DEFAULT = 'https://images.unsplash.com/photo-1560183441-6333262aa22c?q=80&w=2070&auto=format&fit=crop&v=force_reload_new'
-# もしローカル画像がなくても、このネット上の画像を表示してエラーを防ぐ
 
 # 質問データ (学生向け)
 QUESTIONS = [
@@ -40,7 +38,6 @@ QUESTIONS = [
 # --- ヘルパー関数群 ---
 
 def get_api_key():
-    # 万が一APIキー取得でエラーが出てもアプリを止めない
     try:
         if "GEMINI_API_KEY" in st.secrets:
             return st.secrets["GEMINI_API_KEY"]
@@ -54,7 +51,6 @@ def get_api_key():
         return None
 
 def get_base64_of_bin_file(bin_file):
-    # ファイル読み込みエラー対策
     try:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(base_dir, bin_file)
@@ -68,7 +64,6 @@ def get_base64_of_bin_file(bin_file):
 
 # --- HTML生成関数 ---
 def create_result_html(base_data, dynamic_data, final_advice, img_base64):
-    # HTML生成中のエラー対策
     try:
         html = f"""
         <!DOCTYPE html>
@@ -78,74 +73,15 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
             <title>運命の鑑定書 - {base_data['title']}</title>
             <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Shippori+Mincho+B1:wght@400;700;900&display=swap" rel="stylesheet">
             <style>
-                body {{
-                    background-color: #050510;
-                    color: #E0E0E0;
-                    font-family: 'Shippori Mincho B1', serif;
-                    text-align: center;
-                    padding: 40px;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background-image: url('https://www.transparenttextures.com/patterns/always-grey.png');
-                    background-color: #1a0f2e;
-                    border: 4px double #FFD700;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
-                }}
-                h1 {{
-                    font-family: 'Cinzel', serif;
-                    color: #FFD700;
-                    font-size: 3em;
-                    margin-bottom: 5px;
-                    text-shadow: 0 0 10px #FFD700;
-                }}
-                .sub-title {{
-                    color: #AAAAAA;
-                    letter-spacing: 0.2em;
-                    margin-bottom: 20px;
-                }}
-                .catchphrase {{
-                    color: #FFD700;
-                    font-weight: bold;
-                    font-size: 1.2em;
-                    margin-bottom: 20px;
-                    background: rgba(255, 215, 0, 0.1);
-                    display: inline-block;
-                    padding: 5px 15px;
-                    border-radius: 20px;
-                }}
-                .main-img {{
-                    width: 300px;
-                    height: 300px;
-                    object-fit: cover;
-                    border-radius: 50%;
-                    border: 3px solid #FFD700;
-                    margin: 10px auto;
-                    display: block;
-                    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-                }}
-                .section-box {{
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 10px;
-                    padding: 20px;
-                    margin: 30px 0;
-                    text-align: left;
-                }}
-                .section-title {{
-                    color: #FFD700;
-                    font-weight: bold;
-                    font-size: 1.2em;
-                    border-bottom: 1px solid #FFD700;
-                    padding-bottom: 5px;
-                    margin-bottom: 15px;
-                }}
-                .advice-text {{
-                    line-height: 2.0;
-                    font-size: 1.1em;
-                }}
+                body {{ background-color: #050510; color: #E0E0E0; font-family: 'Shippori Mincho B1', serif; text-align: center; padding: 40px; }}
+                .container {{ max-width: 800px; margin: 0 auto; background-image: url('https://www.transparenttextures.com/patterns/always-grey.png'); background-color: #1a0f2e; border: 4px double #FFD700; border-radius: 20px; padding: 40px; box-shadow: 0 0 50px rgba(255, 215, 0, 0.3); }}
+                h1 {{ font-family: 'Cinzel', serif; color: #FFD700; font-size: 3em; margin-bottom: 5px; text-shadow: 0 0 10px #FFD700; }}
+                .sub-title {{ color: #AAAAAA; letter-spacing: 0.2em; margin-bottom: 20px; }}
+                .catchphrase {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 20px; background: rgba(255, 215, 0, 0.1); display: inline-block; padding: 5px 15px; border-radius: 20px; }}
+                .main-img {{ width: 300px; height: 300px; object-fit: cover; border-radius: 50%; border: 3px solid #FFD700; margin: 10px auto; display: block; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }}
+                .section-box {{ background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 20px; margin: 30px 0; text-align: left; }}
+                .section-title {{ color: #FFD700; font-weight: bold; font-size: 1.2em; border-bottom: 1px solid #FFD700; padding-bottom: 5px; margin-bottom: 15px; }}
+                .advice-text {{ line-height: 2.0; font-size: 1.1em; }}
                 ul {{ padding-left: 20px; }}
                 li {{ margin-bottom: 10px; }}
             </style>
@@ -155,34 +91,11 @@ def create_result_html(base_data, dynamic_data, final_advice, img_base64):
                 <h1>{base_data['title']}</h1>
                 <div class="sub-title">{base_data['sub']}</div>
                 <div class="catchphrase">{base_data['simple_text']}</div>
-                
                 <img src="data:image/jpeg;base64,{img_base64}" class="main-img">
-                
-                <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">
-                    “{dynamic_data.get('desc', '運命は開かれた')}”
-                </div>
-
-                <div class="section-box">
-                    <div class="section-title">🗝️ 今伸ばすべきスキル</div>
-                    <ul>
-                        {''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}
-                    </ul>
-                </div>
-
-                <div class="section-box">
-                    <div class="section-title">💼 おすすめインターン・適職</div>
-                    <ul>
-                        {''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}
-                    </ul>
-                </div>
-
-                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;">
-                    <div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div>
-                    <div class="advice-text">
-                        {final_advice.replace('\n', '<br>')}
-                    </div>
-                </div>
-                
+                <div style="font-size: 1.5em; font-weight: bold; margin: 20px 0; color: #FFF;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
+                <div class="section-box"><div class="section-title">🗝️ 今伸ばすべきスキル</div><ul>{''.join([f'<li>{skill}</li>' for skill in dynamic_data['skills']])}</ul></div>
+                <div class="section-box"><div class="section-title">💼 おすすめインターン・適職</div><ul>{''.join([f'<li>{job}</li>' for job in dynamic_data['jobs']])}</ul></div>
+                <div class="section-box" style="background: rgba(255, 248, 220, 0.9); color: #3E2723;"><div class="section-title" style="color: #8c5e24; border-color: #8c5e24;">📜 賢者からの助言</div><div class="advice-text">{final_advice.replace('\n', '<br>')}</div></div>
                 <p style="margin-top: 30px; font-size: 0.8em; color: #666;">Issued by FORTUNE CAREER - 学生のためのAI職業診断</p>
             </div>
         </body>
@@ -230,7 +143,6 @@ def apply_custom_css(bg_image_url):
             margin-top: 5vh !important;
         }}
         
-        /* 文字の視認性向上設定 */
         .intro-text {{
             font-size: 1.5rem !important;
             line-height: 2.2; 
@@ -245,7 +157,46 @@ def apply_custom_css(bg_image_url):
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }}
 
-        /* ボタンデザイン */
+        /* --- チャットUIの劇的改善 --- */
+        
+        /* チャットメッセージのバブルデザイン */
+        .stChatMessage {{
+            background-color: rgba(26, 15, 46, 0.85) !important; /* 濃い紫の背景 */
+            border: 1px solid rgba(255, 215, 0, 0.5) !important; /* 金色の枠線（半透明） */
+            border-radius: 15px !important;
+            padding: 15px !important;
+            margin-bottom: 15px !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+            transition: transform 0.2s ease-in-out;
+        }}
+        
+        /* ユーザーとAIでアイコンの背景を変える */
+        .stChatMessage[data-testid="stChatMessage"]:has(div[data-testid="user-avatar"]) {{
+            background-color: rgba(40, 40, 60, 0.85) !important; /* ユーザーは少し青っぽい黒 */
+            border-color: rgba(200, 200, 255, 0.3) !important;
+        }}
+
+        /* アバターアイコンの調整 */
+        .stChatMessage .stAvatar {{
+            background-color: #FFD700 !important;
+            color: #000 !important;
+            font-size: 1.5rem !important;
+        }}
+
+        /* 入力欄のデザイン */
+        .stChatInput textarea {{
+            background-color: rgba(0, 0, 0, 0.85) !important;
+            color: #FFFFFF !important;
+            border: 2px solid #FFD700 !important;
+            border-radius: 25px !important;
+            font-size: 1.1rem !important;
+        }}
+        .stChatInput textarea:focus {{
+            border-color: #FFF !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+        }}
+
+        /* --- ボタンデザイン --- */
         div[data-testid="stFormSubmitButton"] button, 
         .stButton button,
         div[data-testid="stDownloadButton"] button {{
@@ -265,7 +216,6 @@ def apply_custom_css(bg_image_url):
             transition: all 0.3s ease !important;
             animation: shine 3s infinite alternate;
         }}
-        
         div[data-testid="stFormSubmitButton"] button:hover, 
         .stButton button:hover,
         div[data-testid="stDownloadButton"] button:hover {{
@@ -274,10 +224,7 @@ def apply_custom_css(bg_image_url):
             background: linear-gradient(45deg, #FFFACD, #FFD700) !important;
             color: #000000 !important;
         }}
-        
-        div[data-testid="stDownloadButton"] button * {{
-            color: #000000 !important;
-        }}
+        div[data-testid="stDownloadButton"] button * {{ color: #000000 !important; }}
 
         div[role="radiogroup"] label {{
             background-color: rgba(0, 0, 0, 0.9) !important;
@@ -304,37 +251,11 @@ def apply_custom_css(bg_image_url):
 
         [data-testid="stBottom"] {{ background-color: transparent !important; border: none !important; }}
         [data-testid="stBottom"] > div {{ background-color: transparent !important; }}
-        .stChatInput textarea {{
-            background-color: rgba(0, 0, 0, 0.8) !important;
-            color: #FFFFFF !important;
-            border: 2px solid #FFD700 !important;
-            border-radius: 20px !important;
-        }}
-        .stChatMessage {{
-            background-color: rgba(10, 10, 20, 0.85) !important;
-            border: 1px solid rgba(255, 215, 0, 0.3) !important;
-            border-radius: 15px !important;
-            padding: 10px !important;
-            margin-bottom: 10px !important;
-        }}
         
-        .tarot-card-outer {{
-            padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
-            border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            margin: 0 auto; max-width: 600px;
-        }}
-        .tarot-card-inner {{
-            background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center;
-        }}
-        .result-simple-text {{
-            color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block;
-        }}
-        .advice-box {{
-            background: rgba(255, 248, 220, 0.9); border: 3px double #8B4513;
-            border-radius: 10px; padding: 25px; margin-top: 30px;
-            color: #3E2723 !important;
-        }}
+        .tarot-card-outer {{ padding: 5px; background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7); border-radius: 20px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); margin: 0 auto; max-width: 600px; }}
+        .tarot-card-inner {{ background: #1a0f2e; border-radius: 15px; padding: 30px; text-align: center; }}
+        .result-simple-text {{ color: #FFD700; font-weight: bold; font-size: 1.2em; margin-bottom: 10px; background: rgba(255, 255, 255, 0.1); padding: 5px 10px; border-radius: 15px; display: inline-block; }}
+        .advice-box {{ background: rgba(255, 248, 220, 0.9); border: 3px double #8B4513; border-radius: 10px; padding: 25px; margin-top: 30px; color: #3E2723 !important; }}
         .advice-box * {{ color: #3E2723 !important; }}
     </style>
     """, unsafe_allow_html=True)
@@ -348,19 +269,16 @@ def calculate_type():
                 attr = q["options"][selected_label]
                 scores[attr] += 1
                 break
-    
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     first_attr, first_score = sorted_scores[0]
     second_attr, second_score = sorted_scores[1]
-    
     res_type = first_attr if (first_score - second_score >= 2) else "-".join(sorted([first_attr, second_attr]))
     return res_type, first_attr
 
-# --- AI応答関数（API制限対策・自動切り替え・エラーハンドリング強化） ---
+# --- AI応答関数 ---
 def get_gemini_response(prompt, api_key):
     if not api_key: return "⚠️ APIキーが設定されていません。"
     genai.configure(api_key=api_key)
-    
     for model_name in MODELS_TO_TRY:
         try:
             model = genai.GenerativeModel(model_name)
@@ -368,19 +286,13 @@ def get_gemini_response(prompt, api_key):
             for msg in st.session_state.chat_history:
                 role = "user" if msg["role"] == "user" else "model"
                 formatted_history.append({"role": role, "parts": [msg["content"]]})
-            
             chat = model.start_chat(history=formatted_history)
             response = chat.send_message(prompt)
-            # 空のレスポンスチェック
-            if not response.text:
-                raise ValueError("Empty response")
+            if not response.text: raise ValueError("Empty response")
             return response.text 
-            
         except Exception as e:
             print(f"Model {model_name} failed: {e}")
             continue
-    
-    # 最終フォールバックメッセージ（これが表示されればアプリは止まらない）
     return "申し訳ございません。現在、星々の声が届きにくくなっております（アクセス集中）。時間を置いて再度お試しください。"
 
 # --- メイン処理 ---
@@ -393,16 +305,11 @@ def main():
 
     api_key = get_api_key()
     
-    # 画像ファイルがローカルになくてもエラーにならないようチェック
     bg_mansion_base64 = get_base64_of_bin_file("mansion.jpg")
     bg_room_base64 = get_base64_of_bin_file("room.jpg")
-    
-    # 画像がない場合はネット上の画像をデフォルトにする
     bg_css_url = f"url('{URL_BG_DEFAULT}')"
-    
     if st.session_state.step == 0:
-        if bg_mansion_base64:
-            bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
+        if bg_mansion_base64: bg_css_url = f"url('data:image/jpeg;base64,{bg_mansion_base64}')"
     elif bg_room_base64:
         bg_css_url = f"url('data:image/jpeg;base64,{bg_room_base64}')"
     
@@ -453,7 +360,7 @@ def main():
                         st.error("まだ答えられていない予言があります。")
                     else: st.session_state.step = 2; st.rerun()
 
-    # STEP 2: チャット
+    # STEP 2: チャット (ここを大幅改善！)
     elif st.session_state.step == 2:
         st.markdown("<h1 class='main-title' style='margin-top:20px !important;'>Talk with Spirits</h1>", unsafe_allow_html=True)
         if not st.session_state.chat_history:
@@ -461,20 +368,8 @@ def main():
             system_prompt = f"""
             あなたは「運命の館」の占い師ですが、正体は**「学生専門のキャリアコンサルタント」**です。
             ユーザーの属性「{main_attr}」({res_type})に基づき、就職活動や将来のキャリアに向けた具体的なアドバイスを行うため、深掘りをしてください。
-            
-            【役割】
-            ・口調は「〜じゃ」「そなた」等の神秘的な占い師ですが、**内容は超現実的な就活面談**です。
-            
-            【ヒアリングのポイント】
-            ・**ガクチカ（学生時代に力を入れたこと）**: 部活、サークル、アルバイト、ゼミ、研究など。
-            ・**具体的なエピソード**: 「リーダーシップがある」と言うなら、「何人のチームで、どんな課題を解決したか？」を聞く。
-            ・**スキル**: プログラミング、語学、デザイン、対人折衝など、実務で使えるスキルがあるか探る。
-            
-            【進行手順】
-            1. **冒頭**: 「そなたの魂の色は『{main_attr}』じゃ。これは〜な才能を示しておる。学業や課外活動で、そのような才を発揮した場面はないか？」と水を向ける。
-            2. **深掘り**: ユーザーの回答に対し、「なるほど。ではその時、具体的にどのような工夫をしたのじゃ？」「もっと詳しく聞かせておくれ」と履歴書に書けるレベルまで深掘りする。
-            3. **回数制限**: ダラダラ続けず、**2〜3往復**で核心を突き、終了へ導く。
-            4. **終了**: 十分な情報が得られたら、「うむ、そなたの進むべき道が見えた……。運命の書を開くがよい」と締めくくる。
+            【役割】口調は「〜じゃ」「そなた」等の神秘的な占い師ですが、**内容は超現実的な就活面談**です。
+            【ヒアリング】ガクチカ、強み、スキルについて2〜3回質問し、履歴書に書けるレベルまで深掘りしてください。
             """
             with st.spinner("キャリアガイドと通信中..."):
                 initial_response = get_gemini_response(system_prompt, api_key)
@@ -483,10 +378,15 @@ def main():
 
         col_chat1, col_chat2, col_chat3 = st.columns([1, 3, 1])
         with col_chat2:
+            # 吹き出し形式で表示
             for msg in st.session_state.chat_history:
-                role_icon = "🔮" if msg["role"] == "assistant" else "👤"
-                with st.chat_message(msg["role"], avatar=role_icon):
-                    st.write(msg["content"])
+                # 占い師（AI）は水晶玉🔮、ユーザーは学生🧑‍🎓のアイコン
+                if msg["role"] == "assistant":
+                    with st.chat_message("assistant", avatar="🔮"):
+                        st.write(msg["content"])
+                else:
+                    with st.chat_message("user", avatar="🧑‍🎓"):
+                        st.write(msg["content"])
         
         prompt = st.chat_input("ここに回答を入力してください...")
         if prompt:
@@ -516,7 +416,6 @@ def main():
         st.markdown("<h1 class='main-title' style='margin-top:20px !important; font-size: 6rem !important;'>✨ Your Destiny Card ✨</h1>", unsafe_allow_html=True)
         
         res_type, _ = calculate_type()
-        
         type_info = {
             "fire": {"title": "開拓の騎士", "sub": "THE LEADER", "simple_text": "行動力と情熱でチームを引っ張るリーダータイプ", "file": "icon_fire.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Leader"},
             "water": {"title": "叡智の賢者", "sub": "THE ENGINEER", "simple_text": "論理的思考で問題を解決する分析・開発タイプ", "file": "icon_water.jpg", "ph": "https://placehold.co/400x400/201335/FFD700?text=Wizard"},
@@ -530,7 +429,6 @@ def main():
         if not st.session_state.dynamic_result:
             with st.spinner("精霊たちが会話の記憶から、あなたの真の能力を紡ぎ出しています..."):
                 genai.configure(api_key=api_key)
-                
                 success = False
                 for model_name in MODELS_TO_TRY:
                     try:
@@ -539,13 +437,10 @@ def main():
                         for msg in st.session_state.chat_history:
                             role = "user" if msg["role"] == "user" else "model"
                             formatted_history.append({"role": role, "parts": [msg["content"]]})
-
                         analysis_prompt = f"""
                         あなたは学生専門のキャリアアドバイザーです。
                         以下の「ユーザーとの会話履歴」と「基本タイプ」に基づき、この学生に最適なキャリアパスを提案してください。
-                        
                         診断された基本タイプ: {base_data['title']} ({res_type})
-                        
                         出力は以下のJSONフォーマットのみで行ってください:
                         {{
                             "skills": ["今伸ばすべきスキル1", "スキル2", "スキル3"],
@@ -555,86 +450,51 @@ def main():
                         """
                         chat_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.chat_history])
                         full_prompt = analysis_prompt + "\n\n【会話履歴】\n" + chat_text
-                        
                         response = model.generate_content(full_prompt)
                         text = response.text.strip()
-                        
-                        # JSONクリーニング（バッククォート削除）
                         if text.startswith("```json"): text = text[7:]
                         if text.endswith("```"): text = text[:-3]
-                        text = text.strip()
-
-                        # JSON解析トライ
                         st.session_state.dynamic_result = json.loads(text)
                         success = True
                         break 
                     except Exception as e:
                         print(f"Analysis Model {model_name} failed: {e}")
                         continue
-                
-                # 全モデル失敗時、またはJSON解析エラー時のフォールバックデータ
                 if not success:
-                    st.session_state.dynamic_result = {
-                        "skills": ["コミュニケーション力", "自己分析", "情報収集力"],
-                        "jobs": ["総合職", "営業", "企画"],
-                        "desc": "あなたの可能性は無限大です。まずは色々な世界を見てみましょう。"
-                    }
+                    st.session_state.dynamic_result = {"skills": ["コミュニケーション力", "自己分析", "情報収集力"], "jobs": ["総合職", "営業", "企画"], "desc": "あなたの可能性は無限大です。まずは色々な世界を見てみましょう。"}
         
         dynamic_data = st.session_state.dynamic_result
-        
-        # アイコン画像（なければネット上の代替画像などは使わず、空文字にしてデフォルト表示へ）
         user_icon = get_base64_of_bin_file(base_data['file'])
-        final_img_src = base_data['file'] if user_icon else ""
-
+        
+        # レーダーチャート
         raw_scores = {"fire": 0, "water": 0, "wind": 0}
         for q_id, selected_label in st.session_state.answers.items():
             for q in QUESTIONS:
                 if q["id"] == q_id:
                     attr = q["options"][selected_label]
                     raw_scores[attr] += 1
-        
-        vals = [
-            raw_scores["fire"], raw_scores["water"], raw_scores["wind"],
-            (raw_scores["fire"]+raw_scores["wind"])/1.2, (raw_scores["fire"]+raw_scores["water"])/1.2
-        ]
+        vals = [raw_scores["fire"], raw_scores["water"], raw_scores["wind"], (raw_scores["fire"]+raw_scores["wind"])/1.2, (raw_scores["fire"]+raw_scores["water"])/1.2]
         categories = ['実行力', '論理力', '共感力', '創造性', '戦略性']
-        vals += [vals[0]]
-        categories += [categories[0]]
-
+        vals += [vals[0]]; categories += [categories[0]]
         fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(
-            r=vals, theta=categories, fill='toself', name=base_data['title'],
-            line=dict(color='#FFD700', width=4), fillcolor='rgba(255, 215, 0, 0.5)',
-            mode='lines+markers', marker=dict(size=10, color='#FFD700', symbol='diamond')
-        ))
-        fig.update_layout(
-            paper_bgcolor='rgba(15, 15, 25, 0.9)',
-            polar=dict(
-                radialaxis=dict(visible=True, range=[0, 10], tickfont=dict(color='white', size=12, weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2, layer='below traces'),
-                angularaxis=dict(tickfont=dict(color='#FFD700', size=22, family='Shippori Mincho B1', weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2),
-                bgcolor='rgba(0,0,0,0)'
-            ),
-            font=dict(color='white'), showlegend=False, margin=dict(l=60, r=60, t=60, b=60), height=500
-        )
+        fig.add_trace(go.Scatterpolar(r=vals, theta=categories, fill='toself', name=base_data['title'], line=dict(color='#FFD700', width=4), fillcolor='rgba(255, 215, 0, 0.5)', mode='lines+markers', marker=dict(size=10, color='#FFD700', symbol='diamond')))
+        fig.update_layout(paper_bgcolor='rgba(15, 15, 25, 0.9)', polar=dict(radialaxis=dict(visible=True, range=[0, 10], tickfont=dict(color='white', size=12, weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2, layer='below traces'), angularaxis=dict(tickfont=dict(color='#FFD700', size=22, family='Shippori Mincho B1', weight='bold'), gridcolor='rgba(255,255,255,0.4)', gridwidth=2), bgcolor='rgba(0,0,0,0)'), font=dict(color='white'), showlegend=False, margin=dict(l=60, r=60, t=60, b=60), height=500)
 
         col_res1, col_res2 = st.columns([1, 1], gap="large")
         with col_res1:
             st.markdown(f"""
-            <div class="tarot-card-outer">
-                <div class="tarot-card-inner">
-                    <div class="result-sub" style="font-size: 1.2em; letter-spacing: 0.2em;">{base_data['sub']}</div>
-                    <div class="result-title" style="font-size: 2.5em; margin: 15px 0;">{base_data['title']}</div>
-                    <div class="result-simple-text">{base_data['simple_text']}</div>
-                    <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" class="result-image" style="width:100%; max-width:300px; border-radius:10px;">
-                    <div class="result-desc" style="font-size: 1.3em; font-style: italic;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
-                </div>
-            </div>
+            <div class="tarot-card-outer"><div class="tarot-card-inner">
+                <div class="result-sub" style="font-size: 1.2em; letter-spacing: 0.2em;">{base_data['sub']}</div>
+                <div class="result-title" style="font-size: 2.5em; margin: 15px 0;">{base_data['title']}</div>
+                <div class="result-simple-text">{base_data['simple_text']}</div>
+                <img src="data:image/jpeg;base64,{user_icon if user_icon else ''}" class="result-image" style="width:100%; max-width:300px; border-radius:10px;">
+                <div class="result-desc" style="font-size: 1.3em; font-style: italic;">“{dynamic_data.get('desc', '運命は開かれた')}”</div>
+            </div></div>
             """, unsafe_allow_html=True)
 
         with col_res2:
             st.markdown("<h3 style='text-align: center; color: #FFD700; margin-bottom: 15px; font-size: 2em;'>能力チャート</h3>", unsafe_allow_html=True)
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            
             st.markdown(f"""
             <div style="background: rgba(15, 15, 25, 0.9); padding: 25px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.3); margin-top: 10px;">
                 <p style="color: #FFD700 !important; font-weight: bold; margin-bottom: 5px; font-size: 1.2em;">🗝️ 今伸ばすべきスキル:</p>
@@ -649,7 +509,6 @@ def main():
             ユーザーの診断結果: {base_data['title']}
             AI分析による適職: {','.join(dynamic_data['jobs'])}
             会話履歴: {st.session_state.chat_history}
-            
             上記を踏まえ、神秘的な占い師として、学生に向けたキャリアアドバイスを300文字程度で記述してください。
             「就活でアピールすべき点」や「残りの学生生活でやっておくべきこと」を含めてください。
             """
@@ -663,17 +522,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # --- HTMLダウンロードボタン ---
         st.markdown("<br>", unsafe_allow_html=True)
         col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
         with col_dl2:
             html_data = create_result_html(base_data, dynamic_data, st.session_state.final_advice, user_icon if user_icon else "")
-            st.download_button(
-                label="📄 結果をHTMLファイルで保存",
-                data=html_data,
-                file_name="fortune_result.html",
-                mime="text/html"
-            )
+            st.download_button(label="📄 結果をHTMLファイルで保存", data=html_data, file_name="fortune_result.html", mime="text/html")
             st.caption("※ダウンロードしたファイルは、ブラウザ（ChromeやEdgeなど）で開いてください。")
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -683,5 +536,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
