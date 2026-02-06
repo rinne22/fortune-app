@@ -5,11 +5,13 @@ import base64
 import os
 import plotly.graph_objects as go
 import json
+import re  # 正規表現用
 
 # ==========================================
 # 🔧 設定エリア
 # ==========================================
 TEST_MODE = False 
+# 有効なモデルIDリスト
 MODELS_TO_TRY = ["gemini-2.5-flash", "gemini-3.0-flash", "gemini-2.5-pro"]
 MAX_TURN_COUNT = 3
 
@@ -91,7 +93,28 @@ def apply_custom_css(bg_url):
             background: rgba(0, 0, 0, 0.5); z-index: -1; pointer-events: none;
         }}
 
-        [data-testid="stHeader"] {{ visibility: hidden; }}
+        /* ▼▼▼ 追加：Manage app等の非表示設定 ▼▼▼ */
+        [data-testid="stHeader"] {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+        [data-testid="stToolbar"] {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+        .stAppDeployButton, [data-testid="stManageApp"] {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+        footer {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+        [data-testid="stDecoration"] {{
+            display: none !important;
+            visibility: hidden !important;
+        }}
+        /* ▲▲▲ ここまで ▲▲▲ */
 
         .main-title {{
             font-family: 'Cinzel', serif !important;
@@ -159,7 +182,7 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ★ボタンデザイン：通常ボタン、フォーム送信、ダウンロードボタン全てに適用 */
+        /* ★ボタンデザイン */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
@@ -171,9 +194,9 @@ def apply_custom_css(bg_url):
         [data-testid="stDownloadButton"] button {{
             width: 100% !important;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important; /* 黒文字 */
+            color: #000000 !important;
             font-weight: 900 !important;
-            border: 2px solid #8B6508 !important; /* 濃い金の枠 */
+            border: 2px solid #8B6508 !important;
             padding: 20px 30px !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -252,12 +275,18 @@ def calculate_type():
 
 def create_result_html(card_data, dynamic_data, final_advice, img_base64):
     try:
+        # ローカル画像がない場合はWebのプレースホルダーを使用（URL形式に修正済み）
+        if img_base64:
+            img_src = f"data:image/jpeg;base64,{img_base64}"
+        else:
+            img_src = "https://placehold.co/400x400/1a0f2e/FFD700?text=Fortune+Card"
+
         return f"""
         <html>
         <body style="background:#050510; color:#E0E0E0; font-family:serif; text-align:center; padding:20px;">
             <div style="border:4px double #FFD700; padding:40px; background:#1a0f2e; border-radius:20px;">
                 <h1 style="color:#FFD700; font-family:serif;">{card_data['title']}</h1>
-                <img src="data:image/jpeg;base64,{img_base64}" style="width:200px; border-radius:10px; border:2px solid #FFD700;">
+                <img src="{img_src}" style="width:200px; border-radius:10px; border:2px solid #FFD700; margin: 15px 0;">
                 <h3 style="color:#FFF;">“{dynamic_data.get('desc','')}”</h3>
                 <div style="text-align:left; background:rgba(255,255,255,0.1); padding:20px; border-radius:10px;">
                     <p><b>適職:</b> {', '.join(dynamic_data['jobs'])}</p>
@@ -415,12 +444,32 @@ def main():
 
         if not st.session_state.dynamic_result:
             with st.spinner("分析中..."):
-                prompt = f"会話履歴:{st.session_state.chat_history} から強み分析JSONを出力: {{'skills':['スキル1','スキル2','スキル3'], 'jobs':['職種1','職種2','職種3'], 'desc':'一言キャッチコピー'}} JSON形式のみ出力せよ。"
+                prompt = f"""
+                以下の会話履歴から強み分析JSONを出力せよ。
+                会話履歴:{st.session_state.chat_history}
+                
+                出力フォーマット:
+                {{
+                    "skills": ["スキル1", "スキル2", "スキル3"],
+                    "jobs": ["職種1", "職種2", "職種3"],
+                    "desc": "一言キャッチコピー"
+                }}
+                
+                【重要】Markdownのコードブロック(```json)は不要です。純粋なJSONテキストのみ出力してください。
+                """
                 try:
                     res = get_gemini_response(prompt, api_key)
-                    cleaned_res = res.replace("```json", "").replace("```", "").strip()
-                    st.session_state.dynamic_result = json.loads(cleaned_res)
-                except: st.session_state.dynamic_result = {"skills":["分析"], "jobs":["総合職"], "desc":"可能性"}
+                    # 正規表現による強力なJSON抽出
+                    match = re.search(r'\{.*\}', res, re.DOTALL)
+                    if match:
+                        cleaned_res = match.group(0)
+                        st.session_state.dynamic_result = json.loads(cleaned_res)
+                    else:
+                        cleaned_res = res.replace("```json", "").replace("```", "").strip()
+                        st.session_state.dynamic_result = json.loads(cleaned_res)
+                        
+                except Exception as e:
+                    st.session_state.dynamic_result = {"skills":["分析不能"], "jobs":["全職種"], "desc":"無限の可能性"}
                 
                 adv_prompt = "診断結果に基づき、占い師として「〜じゃ」口調で、学生の背中を押すアドバイスを300文字でください。具体的な職種やアクションを含めて分かりやすく。"
                 st.session_state.final_advice = get_gemini_response(adv_prompt, api_key)
@@ -430,13 +479,18 @@ def main():
         
         with col1:
             img_b64 = get_base64_of_bin_file(card_data['file'])
-            src = f"data:image/jpeg;base64,{img_b64}" if img_b64 else "https://placehold.co/300x300/000/FFF?text=Card"
+            # 表示用画像ソース
+            if img_b64:
+                src = f"data:image/jpeg;base64,{img_b64}"
+            else:
+                src = "[https://placehold.co/400x400/1a0f2e/FFD700?text=Fortune+Card](https://placehold.co/400x400/1a0f2e/FFD700?text=Fortune+Card)"
+            
             st.markdown(f"""
             <div class="card-frame">
                 <div class="card-content">
                     <h2 style="color:#FFD700;">{card_data['title']}</h2>
                     <img src="{src}" style="width:100%; border-radius:10px; margin:10px 0;">
-                    <p style="color:#FFF; font-weight:bold;">“{d_res['desc']}”</p>
+                    <p style="color:#FFF; font-weight:bold;">“{d_res.get('desc','')}”</p>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -463,17 +517,16 @@ def main():
             
             st.markdown(f"""
             <div style="background:rgba(0,0,0,0.7); padding:20px; border-radius:10px; border:1px solid #FFD700; font-size:1.1rem;">
-                <p><b>🗝️ スキル:</b> {' / '.join(d_res['skills'])}</p>
-                <p><b>💼 適職:</b> {' / '.join(d_res['jobs'])}</p>
+                <p><b>🗝️ スキル:</b> {' / '.join(d_res.get('skills', []))}</p>
+                <p><b>💼 適職:</b> {' / '.join(d_res.get('jobs', []))}</p>
             </div>
             """, unsafe_allow_html=True)
 
         st.markdown(f"<div class='advice-box'><h3>📜 Oracle's Message</h3>{st.session_state.final_advice}</div>", unsafe_allow_html=True)
         
-        # エラー修正：card_data, img_b64 を正しく渡す
-        html = create_result_html(card_data, st.session_state.dynamic_result, st.session_state.final_advice, img_b64 if img_b64 else "")
+        # HTMLダウンロード用 (画像URL修正済み)
+        html = create_result_html(card_data, st.session_state.dynamic_result, st.session_state.final_advice, img_b64)
         st.download_button("📄 鑑定書を保存", data=html, file_name="result.html", mime="text/html")
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
