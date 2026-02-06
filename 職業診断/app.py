@@ -159,7 +159,7 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ボタンデザインの修正 */
+        /* ★ボタンデザイン：通常ボタン、フォーム送信、ダウンロードボタン全てに適用 */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
@@ -167,12 +167,13 @@ def apply_custom_css(bg_url):
         }}
 
         .stButton button, 
-        [data-testid="stFormSubmitButton"] button {{
+        [data-testid="stFormSubmitButton"] button,
+        [data-testid="stDownloadButton"] button {{
             width: 100% !important;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important;
+            color: #000000 !important; /* 黒文字 */
             font-weight: 900 !important;
-            border: 2px solid #8B6508 !important;
+            border: 2px solid #8B6508 !important; /* 濃い金の枠 */
             padding: 20px 30px !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -184,7 +185,8 @@ def apply_custom_css(bg_url):
         }}
         
         .stButton button:hover,
-        [data-testid="stFormSubmitButton"] button:hover {{
+        [data-testid="stFormSubmitButton"] button:hover,
+        [data-testid="stDownloadButton"] button:hover {{
             transform: scale(1.05) !important;
             background: linear-gradient(45deg, #FFED4B, #FFD700) !important;
             border-color: #8B6508 !important;
@@ -192,6 +194,7 @@ def apply_custom_css(bg_url):
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.8) !important;
         }}
         
+        /* 結果カード */
         .card-frame {{
             padding: 5px;
             background: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7);
@@ -280,7 +283,7 @@ def main():
     mansion_local = get_base64_of_bin_file("mansion.jpg")
     room_local = get_base64_of_bin_file("room.jpg")
     
-    # 背景切り替え
+    # 背景切り替えロジック
     bg_css_url = f"url('{URL_BG_MANSION}')"
     if st.session_state.step == 0:
         if mansion_local:
@@ -467,9 +470,10 @@ def main():
 
         st.markdown(f"<div class='advice-box'><h3>📜 Oracle's Message</h3>{st.session_state.final_advice}</div>", unsafe_allow_html=True)
         
-        # 修正完了：正しい変数(img_b64)を渡し、保存機能が確実に動作します
+        # エラー修正：card_data, img_b64 を正しく渡す
         html = create_result_html(card_data, st.session_state.dynamic_result, st.session_state.final_advice, img_b64 if img_b64 else "")
         st.download_button("📄 鑑定書を保存", data=html, file_name="result.html", mime="text/html")
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
+
