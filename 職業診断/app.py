@@ -159,7 +159,7 @@ def apply_custom_css(bg_url):
             line-height: 1.6;
         }}
 
-        /* ★ボタン：金色、黒文字、発光アニメーション */
+        /* ボタンデザインの修正 */
         @keyframes pulse-gold {{
             0% {{ box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }}
             70% {{ box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }}
@@ -170,9 +170,9 @@ def apply_custom_css(bg_url):
         [data-testid="stFormSubmitButton"] button {{
             width: 100% !important;
             background: linear-gradient(45deg, #FFD700, #FDB931, #DAA520) !important;
-            color: #000000 !important; /* 黒文字 */
+            color: #000000 !important;
             font-weight: 900 !important;
-            border: 2px solid #8B6508 !important; /* 濃い金の枠 */
+            border: 2px solid #8B6508 !important;
             padding: 20px 30px !important;
             border-radius: 50px !important;
             font-family: 'Cinzel', serif !important;
@@ -247,13 +247,13 @@ def calculate_type():
     if s1 - s2 >= 2: return t1, t1
     return f"{min(t1,t2)}-{max(t1,t2)}", t1
 
-def create_result_html(base_data, dynamic_data, final_advice, img_base64):
+def create_result_html(card_data, dynamic_data, final_advice, img_base64):
     try:
         return f"""
         <html>
         <body style="background:#050510; color:#E0E0E0; font-family:serif; text-align:center; padding:20px;">
             <div style="border:4px double #FFD700; padding:40px; background:#1a0f2e; border-radius:20px;">
-                <h1 style="color:#FFD700; font-family:serif;">{base_data['title']}</h1>
+                <h1 style="color:#FFD700; font-family:serif;">{card_data['title']}</h1>
                 <img src="data:image/jpeg;base64,{img_base64}" style="width:200px; border-radius:10px; border:2px solid #FFD700;">
                 <h3 style="color:#FFF;">“{dynamic_data.get('desc','')}”</h3>
                 <div style="text-align:left; background:rgba(255,255,255,0.1); padding:20px; border-radius:10px;">
@@ -353,7 +353,6 @@ def main():
         
         if not st.session_state.chat_history:
             _, main_attr = calculate_type()
-            # プロンプト修正：「〜じゃ」口調、かつ具体的で分かりやすく
             first_prompt = f"""
             あなたは「運命の館」の主（占い師）であり、同時に超一流の学生キャリアコンサルタントです。
             ユーザーの属性は「{main_attr}」です。
@@ -420,7 +419,6 @@ def main():
                     st.session_state.dynamic_result = json.loads(cleaned_res)
                 except: st.session_state.dynamic_result = {"skills":["分析"], "jobs":["総合職"], "desc":"可能性"}
                 
-                # アドバイス用プロンプトも「〜じゃ」口調で分かりやすく
                 adv_prompt = "診断結果に基づき、占い師として「〜じゃ」口調で、学生の背中を押すアドバイスを300文字でください。具体的な職種やアクションを含めて分かりやすく。"
                 st.session_state.final_advice = get_gemini_response(adv_prompt, api_key)
 
@@ -469,9 +467,9 @@ def main():
 
         st.markdown(f"<div class='advice-box'><h3>📜 Oracle's Message</h3>{st.session_state.final_advice}</div>", unsafe_allow_html=True)
         
-        html = create_result_html(base_data, st.session_state.dynamic_result, st.session_state.final_advice, user_icon if user_icon else "")
+        # 修正完了：正しい変数(img_b64)を渡し、保存機能が確実に動作します
+        html = create_result_html(card_data, st.session_state.dynamic_result, st.session_state.final_advice, img_b64 if img_b64 else "")
         st.download_button("📄 鑑定書を保存", data=html, file_name="result.html", mime="text/html")
         if st.button("↩️ 戻る"): st.session_state.clear(); st.rerun()
 
 if __name__ == "__main__": main()
-
